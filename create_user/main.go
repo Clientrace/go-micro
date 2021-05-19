@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -15,9 +16,14 @@ import (
 // https://serverless.com/framework/docs/providers/aws/events/apigateway/#lambda-proxy-integration
 type Response events.APIGatewayProxyResponse
 
+type EventSpec interface {
+}
+
 // Handler is our lambda handler invoked by the `lambda.Start` function call
-func Handler(ctx context.Context) (Response, error) {
+func Handler(ctx context.Context, event events.APIGatewayCustomAuthorizerRequest) (Response, error) {
 	var buf bytes.Buffer
+
+	fmt.Println(event)
 
 	body, err := json.Marshal(map[string]interface{}{
 		"message": "Go Serverless v1.0! Your function executed successfully!",
