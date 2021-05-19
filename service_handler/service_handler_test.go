@@ -1,4 +1,4 @@
-package _service_handler
+package service_handler
 
 import (
 	"testing"
@@ -6,7 +6,7 @@ import (
 
 func TestRecursiveAtribCheck(t *testing.T) {
 
-	// requestSpec := service_ReqEventSpec{
+	// requestSpec := service_handler.ReqEventSpec{
 	// 	ReqEventAttributes: []EventAttrib{
 	// 		{name: "Name", dType: "string"},
 	// 		{name: "Email", dType: "string"},

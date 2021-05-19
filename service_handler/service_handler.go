@@ -1,4 +1,4 @@
-package _service_handler
+package service_handler
 
 /* Type Map Reference */
 var ATTRIB_TYPE_MAP = map[string]interface{}{
