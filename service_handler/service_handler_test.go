@@ -1,11 +1,44 @@
 package service_handler
 
 import (
-	"fmt"
 	"testing"
 )
 
+// All the subtest for recursive attribute checking
+var attribCheckTests = []struct {
+	testName   string
+	attributes map[string]interface{}
+	want       string
+}{
+	{
+		"missing key check",
+		map[string]interface{}{
+			"email": "test@gmail.com",
+		},
+		MISSING_ATTRIBUTE_ERROR,
+	},
+	{
+		"attribute type checking",
+		map[string]interface{}{
+			"username": 0,
+			"email":    1,
+			"age":      2,
+		},
+		INVALID_ATTRIBUTE_TYPE_ERROR,
+	},
+	{
+		"missing child key check",
+		map[string]interface{}{
+			"username": map[string]interface{}{"firstName": 0},
+			"email":    "test@email.com",
+			"age":      2,
+		},
+		INVALID_ATTRIBUTE_TYPE_ERROR,
+	},
+}
+
 func TestRecursiveAtribCheck(t *testing.T) {
+	// Test Specifications for request attribute
 	requestSpec := ReqEventSpec{
 		ReqEventAttributes: map[string]interface{}{
 			"username": map[string]interface{}{
@@ -42,38 +75,12 @@ func TestRecursiveAtribCheck(t *testing.T) {
 			},
 		},
 	}
-
-	fmt.Println("Testing recursive attribute check if there's a missing key..")
-	got, _ := recursiveAttributeCheck(
-		"testEndpoint",
-		requestSpec, map[string]interface{}{
-			"email": "test@gmail.com",
-			"age":   0,
-		},
-	)
-
-	want := MISSING_ATTRIBUTE_ERROR
-	if got != want {
-		t.Errorf("Failed Missing attrib check. Got %v, expecting %v", got, want)
-	} else {
-		fmt.Println("=> OK")
+	for _, tt := range attribCheckTests {
+		t.Run(tt.testName, func(t *testing.T) {
+			got, _ := recursiveAttributeCheck("testEndpoint", requestSpec, tt.attributes, 0)
+			if got != tt.want {
+				t.Errorf("recursive attribute check got %v, want %v", got, tt.want)
+			}
+		})
 	}
-
-	fmt.Println("Testing recursive attribute type checking..")
-	got, _ = recursiveAttributeCheck(
-		"testEndpoint",
-		requestSpec, map[string]interface{}{
-			"username": 0,
-			"email":    1,
-			"age":      2,
-		},
-	)
-
-	want = INVALID_ATTRIBUTE_TYPE_ERROR
-	if got != want {
-		t.Errorf("Failed Attribute Type Check. Got %v, expecting %v", got, want)
-	} else {
-		fmt.Println("=> OK")
-	}
-
 }
