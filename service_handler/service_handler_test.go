@@ -18,13 +18,31 @@ var attribCheckTests = []struct {
 		MISSING_ATTRIBUTE_ERROR,
 	},
 	{
-		"attribute type checking",
+		"attribute type checking [invalid string]",
 		map[string]interface{}{
 			"username": 0,
 			"email":    1,
 			"age":      2,
 		},
 		INVALID_ATTRIBUTE_TYPE_ERROR,
+	},
+	{
+		"attribute type checking [invalid number]",
+		map[string]interface{}{
+			"username": "test_username",
+			"email":    "test email",
+			"age":      "testInvalidValue",
+		},
+		INVALID_ATTRIBUTE_TYPE_ERROR,
+	},
+	{
+		"missing child key check",
+		map[string]interface{}{
+			"username": map[string]interface{}{},
+			"email":    "test@email.com",
+			"age":      2,
+		},
+		MISSING_ATTRIBUTE_ERROR,
 	},
 	{
 		"missing child key check",
