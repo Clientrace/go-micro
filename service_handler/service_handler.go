@@ -10,13 +10,6 @@ const ATTRIBUTE_OK string = "ATTRIBUTE_OK"
 const MISSING_ATTRIBUTE_ERROR string = "MISSING_ATTRIBUTE"
 const INVALID_ATTRIBUTE_TYPE_ERROR string = "INVALID_ATTRIBUTE_TYPE"
 
-/* Type Map Reference */
-var ATTRIB_TYPE_MAP = map[string]interface{}{
-	"string":  []string{"string"},
-	"boolean": []string{"bool"},
-	"number":  []string{"int", "float64"},
-}
-
 /* Required Event Specification Attribute */
 type ReqEventAttrib struct {
 	DataType   string
@@ -62,6 +55,28 @@ type ServiceHandler interface {
 // HTTP Request URL Endpiont
 // requestEndpoint := event.RequestContext.ResourcePath
 // }
+
+// Create new Required Event Attributes
+func NewReqEvenAttrib(dataType string, isRequired bool, minLength int, maxLength int) *ReqEventAttrib {
+	validDataTypes := []string{"string", "number", "boolean"}
+	invalidDataType := false
+	for _, v := range validDataTypes {
+		if v == dataType {
+			invalidDataType = true
+			break
+		}
+	}
+	if invalidDataType {
+		panic("invalid attribute type, attribute type can only be of the ff [string ,number, boolean]")
+	}
+	return &ReqEventAttrib{
+		DataType:   dataType,
+		IsRequired: isRequired,
+		MinLength:  minLength,
+		MaxLength:  maxLength,
+	}
+
+}
 
 /*
 	@Internal Function

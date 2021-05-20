@@ -45,7 +45,7 @@ var attribCheckTests = []struct {
 		MISSING_ATTRIBUTE_ERROR,
 	},
 	{
-		"missing child key check",
+		"invalid child attrib type check",
 		map[string]interface{}{
 			"username": map[string]interface{}{"firstName": 0},
 			"email":    "test@email.com",
@@ -60,37 +60,13 @@ func TestRecursiveAtribCheck(t *testing.T) {
 	requestSpec := ReqEventSpec{
 		ReqEventAttributes: map[string]interface{}{
 			"username": map[string]interface{}{
-				"firstName": ReqEventAttrib{
-					DataType:   "string",
-					IsRequired: true,
-					MinLength:  4,
-					MaxLength:  4,
-				},
-				"lastName": ReqEventAttrib{
-					DataType:   "string",
-					IsRequired: true,
-					MinLength:  4,
-					MaxLength:  4,
-				},
-				"middleName": ReqEventAttrib{
-					DataType:   "string",
-					IsRequired: false,
-					MinLength:  4,
-					MaxLength:  255,
-				},
+				"firstName":  NewReqEvenAttrib("string", true, 4, 4),
+				"lastName":   NewReqEvenAttrib("string", true, 4, 255),
+				"middleName": NewReqEvenAttrib("string", true, 4, 255),
 			},
-			"email": ReqEventAttrib{
-				DataType:   "string",
-				IsRequired: true,
-				MinLength:  4,
-				MaxLength:  255,
-			},
-			"age": ReqEventAttrib{
-				DataType:   "number",
-				IsRequired: true,
-				MinLength:  0,
-				MaxLength:  0,
-			},
+			"email":      NewReqEvenAttrib("string", true, 4, 4),
+			"age":        NewReqEvenAttrib("string", true, 1, 1000),
+			"isEmployed": NewReqEvenAttrib("boolean", true, 0, 0),
 		},
 	}
 	for _, tt := range attribCheckTests {
