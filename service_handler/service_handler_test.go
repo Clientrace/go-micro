@@ -81,6 +81,19 @@ var attribCheckTests = []struct {
 		INVALID_ATTRIBUTE_TYPE_ERROR,
 	},
 	{
+		"invalid length, string length too long",
+		map[string]interface{}{
+			"username": map[string]interface{}{
+				"firstName":  "abcdefghijklmnopq",
+				"lastName":   "testLastname",
+				"middleName": "testMiddlename",
+			},
+			"email": "test@email.com",
+			"age":   2,
+		},
+		INVALID_ATTRIBUTE_TYPE_ERROR,
+	},
+	{
 		"invalid length, string length too short",
 		map[string]interface{}{
 			"username": map[string]interface{}{
