@@ -11,6 +11,20 @@ var attribCheckTests = []struct {
 	want       string
 }{
 	{
+		"attribute OK",
+		map[string]interface{}{
+			"username": map[string]interface{}{
+				"firstName":  "firstname",
+				"lastName":   "latname",
+				"middleName": "middleName",
+			},
+			"email":      "test@gmail.com",
+			"age":        5,
+			"isEmployed": true,
+		},
+		ATTRIBUTE_OK,
+	},
+	{
 		"missing key check",
 		map[string]interface{}{
 			"email": "test@gmail.com",
@@ -131,7 +145,7 @@ func TestRecursiveAtribCheck(t *testing.T) {
 				"middleName": NewReqEvenAttrib("string", true, 4, 255),
 			},
 			"email":      NewReqEvenAttrib("string", true, 4, 250),
-			"age":        NewReqEvenAttrib("string", true, 1, 1000),
+			"age":        NewReqEvenAttrib("number", true, 1, 1000),
 			"isEmployed": NewReqEvenAttrib("boolean", true, 0, 0),
 		},
 	}

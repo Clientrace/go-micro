@@ -62,6 +62,7 @@ func NewReqEvenAttrib(dataType string, isRequired bool, minLength int, maxLength
 	validDataTypes := []string{"string", "number", "boolean"}
 	invalidDataType := true
 	for _, v := range validDataTypes {
+		fmt.Println("comparing ", v, " to ", dataType)
 		if v == dataType {
 			invalidDataType = false
 			break
@@ -100,7 +101,10 @@ func recursiveAttributeCheck(endpoint string, reqEventSpec ReqEventSpec, attribu
 					reqEventChild := ReqEventSpec{
 						ReqEventAttributes: rqa[k].(map[string]interface{}),
 					}
-					return recursiveAttributeCheck(endpoint, reqEventChild, attributes[k].(map[string]interface{}), depth+1)
+					ret, err := recursiveAttributeCheck(endpoint, reqEventChild, attributes[k].(map[string]interface{}), depth+1)
+					if err != nil {
+						return ret, err
+					}
 				} else {
 					return INVALID_ATTRIBUTE_TYPE_ERROR, fmt.Errorf(
 						"invalid type of attribute '%v'. expected object got %v",
@@ -117,6 +121,7 @@ func recursiveAttributeCheck(endpoint string, reqEventSpec ReqEventSpec, attribu
 				reqAttributeMaxLength := rqa[k].(ReqEventAttrib).MaxLength
 				reqAttributeMinLength := rqa[k].(ReqEventAttrib).MinLength
 				foundAttribType := reflect.TypeOf(attributes[k]).String()
+				fmt.Println("WANT ", reqAttributeType, "GOT ", foundAttribType)
 
 				if reqAttributeType == "string" && foundAttribType == "string" {
 					if !(len(attributes[k].(string)) >= reqAttributeMinLength && len(attributes[k].(string)) <
@@ -133,14 +138,35 @@ func recursiveAttributeCheck(endpoint string, reqEventSpec ReqEventSpec, attribu
 						reflect.TypeOf(attributes[k]).String(),
 					)
 				}
+				fmt.Println("Did it failed here?")
 				if reqAttributeType == "number" && (foundAttribType == "int" || foundAttribType == "float32" ||
 					foundAttribType == "float64") {
-					if !(len(attributes[k].(string)) >= reqAttributeMinLength && len(attributes[k].(string)) <
-						reqAttributeMaxLength) {
-						return INVALID_ATTRIBUTE_LENGTH_ERROR, fmt.Errorf(
-							"invalid length of attribute %v. expected",
-							k,
-						)
+					if foundAttribType == "int" {
+						if !(attributes[k].(int) >= reqAttributeMinLength && attributes[k].(int) <
+							reqAttributeMaxLength) {
+							return INVALID_ATTRIBUTE_LENGTH_ERROR, fmt.Errorf(
+								"invalid length of attribute %v. expected",
+								k,
+							)
+						}
+					}
+					if foundAttribType == "float64" {
+						if !(attributes[k].(float64) >= float64(reqAttributeMinLength) && attributes[k].(float64) <
+							float64(reqAttributeMaxLength)) {
+							return INVALID_ATTRIBUTE_LENGTH_ERROR, fmt.Errorf(
+								"invalid length of attribute %v. expected",
+								k,
+							)
+						}
+					}
+					if foundAttribType == "float32" {
+						if !(attributes[k].(float32) >= float32(reqAttributeMinLength) && attributes[k].(float32) <
+							float32(reqAttributeMaxLength)) {
+							return INVALID_ATTRIBUTE_LENGTH_ERROR, fmt.Errorf(
+								"invalid length of attribute %v. expected",
+								k,
+							)
+						}
 					}
 				} else if reqAttributeType == "number" && !(foundAttribType == "int" || foundAttribType == "float32" ||
 					foundAttribType == "float64") {
@@ -150,6 +176,7 @@ func recursiveAttributeCheck(endpoint string, reqEventSpec ReqEventSpec, attribu
 						attributes[k],
 					)
 				}
+
 				if reqAttributeType == "boolean" && foundAttribType != "bool" {
 					return INVALID_ATTRIBUTE_TYPE_ERROR, fmt.Errorf(
 						"invalid length of attribute %v. expected",
