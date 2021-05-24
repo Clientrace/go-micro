@@ -5,6 +5,10 @@ import (
 	"testing"
 )
 
+var AGE_INVALID_FLOAT32_VALUE float32 = 0.11
+var AGE_INVALID_FLOAT64_VALUE float64 = 0.11111111111111111
+var AGE_INVALID_INT_VALUE int = 10000000000
+
 // All the subtest for recursive attribute checking
 var attribCheckTests = []struct {
 	testName   string
@@ -33,6 +37,26 @@ var attribCheckTests = []struct {
 		MISSING_ATTRIBUTE_ERROR,
 	},
 	{
+		"invalid parent object attribute key type",
+		map[string]interface{}{
+			"username":   "test",
+			"email":      "test@email.com",
+			"age":        2,
+			"isEmployed": false,
+		},
+		INVALID_ATTRIBUTE_TYPE_ERROR,
+	},
+	{
+		"missing child keys from parent attribute test",
+		map[string]interface{}{
+			"username":   map[string]interface{}{},
+			"email":      "test@email.com",
+			"age":        2,
+			"isEmployed": false,
+		},
+		MISSING_ATTRIBUTE_ERROR,
+	},
+	{
 		"attribute type checking [invalid string]",
 		map[string]interface{}{
 			"username": map[string]interface{}{
@@ -49,7 +73,11 @@ var attribCheckTests = []struct {
 	{
 		"attribute type checking [invalid number]",
 		map[string]interface{}{
-			"username":   "test_username",
+			"username": map[string]interface{}{
+				"firstName":  "testFirstName",
+				"lastName":   "testLastName",
+				"middleName": "testMiddleName",
+			},
 			"email":      "test email",
 			"age":        "testInvalidValue",
 			"isEmployed": false,
@@ -59,7 +87,11 @@ var attribCheckTests = []struct {
 	{
 		"attribute type checking [invalid boolean]",
 		map[string]interface{}{
-			"username":   "test_username",
+			"username": map[string]interface{}{
+				"firstName":  "testFirstName",
+				"lastName":   "testLastName",
+				"middleName": "testMiddleName",
+			},
 			"email":      "test email",
 			"age":        5,
 			"isEmployed": "testValue",
@@ -130,6 +162,48 @@ var attribCheckTests = []struct {
 			},
 			"email":      "test@email.com",
 			"age":        2,
+			"isEmployed": false,
+		},
+		INVALID_ATTRIBUTE_LENGTH_ERROR,
+	},
+	{
+		"invalid length, number length too short",
+		map[string]interface{}{
+			"username": map[string]interface{}{
+				"firstName":  "testFirstname",
+				"lastName":   "testLastname",
+				"middleName": "testMiddlename",
+			},
+			"email":      "test@email.com",
+			"age":        AGE_INVALID_INT_VALUE,
+			"isEmployed": false,
+		},
+		INVALID_ATTRIBUTE_LENGTH_ERROR,
+	},
+	{
+		"invalid length, number length too short",
+		map[string]interface{}{
+			"username": map[string]interface{}{
+				"firstName":  "testFirstname",
+				"lastName":   "testLastname",
+				"middleName": "testMiddlename",
+			},
+			"email":      "test@email.com",
+			"age":        AGE_INVALID_FLOAT64_VALUE,
+			"isEmployed": false,
+		},
+		INVALID_ATTRIBUTE_LENGTH_ERROR,
+	},
+	{
+		"invalid length, number length too short",
+		map[string]interface{}{
+			"username": map[string]interface{}{
+				"firstName":  "testFirstname",
+				"lastName":   "testLastname",
+				"middleName": "testMiddlename",
+			},
+			"email":      "test@email.com",
+			"age":        AGE_INVALID_FLOAT32_VALUE,
 			"isEmployed": false,
 		},
 		INVALID_ATTRIBUTE_LENGTH_ERROR,

@@ -170,7 +170,7 @@ func recursiveAttributeCheck(endpoint string, reqEventSpec ReqEventSpec, attribu
 
 				if reqAttributeType == "boolean" && foundAttribType != "bool" {
 					return INVALID_ATTRIBUTE_TYPE_ERROR, fmt.Errorf(
-						"invalid length of attribute %v. expected",
+						"invalid type of attribute %v. expected boolean",
 						k,
 					)
 				}
