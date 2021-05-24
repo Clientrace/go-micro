@@ -62,7 +62,6 @@ func NewReqEvenAttrib(dataType string, isRequired bool, minLength int, maxLength
 	validDataTypes := []string{"string", "number", "boolean"}
 	invalidDataType := true
 	for _, v := range validDataTypes {
-		fmt.Println("comparing ", v, " to ", dataType)
 		if v == dataType {
 			invalidDataType = false
 			break
@@ -85,18 +84,13 @@ func NewReqEvenAttrib(dataType string, isRequired bool, minLength int, maxLength
 	Check request attributes deep. See if passed attribute match the specs
 */
 func recursiveAttributeCheck(endpoint string, reqEventSpec ReqEventSpec, attributes map[string]interface{}, depth int) (string, error) {
-	fmt.Println("\tObject Depth:", depth)
 	rqa := reqEventSpec.ReqEventAttributes
 
 	// Iterate through required attributes
 	for k := range rqa {
-		fmt.Println("processing", k)
-		if val, ok := attributes[k]; ok {
-			fmt.Println("\tChecking Required Attribute ", k, val)
+		if _, ok := attributes[k]; ok {
 			if reflect.TypeOf(rqa[k]).Kind().String() == "map" {
-				fmt.Println(reflect.TypeOf(attributes[k]).String())
 				if reflect.TypeOf(attributes[k]).String() == "map[string]interface {}" {
-					fmt.Println("\t> Parsing Parent Attribute")
 					// Create ReqEventSpec for child attribute
 					reqEventChild := ReqEventSpec{
 						ReqEventAttributes: rqa[k].(map[string]interface{}),
@@ -114,14 +108,12 @@ func recursiveAttributeCheck(endpoint string, reqEventSpec ReqEventSpec, attribu
 				}
 
 			} else {
-				fmt.Println("\t\t> Parsing Child Attribute", k)
 
 				// Required VS Found Attribute Type
 				reqAttributeType := rqa[k].(ReqEventAttrib).DataType
 				reqAttributeMaxLength := rqa[k].(ReqEventAttrib).MaxLength
 				reqAttributeMinLength := rqa[k].(ReqEventAttrib).MinLength
 				foundAttribType := reflect.TypeOf(attributes[k]).String()
-				fmt.Println("WANT ", reqAttributeType, "GOT ", foundAttribType)
 
 				if reqAttributeType == "string" && foundAttribType == "string" {
 					if !(len(attributes[k].(string)) >= reqAttributeMinLength && len(attributes[k].(string)) <
@@ -138,7 +130,6 @@ func recursiveAttributeCheck(endpoint string, reqEventSpec ReqEventSpec, attribu
 						reflect.TypeOf(attributes[k]).String(),
 					)
 				}
-				fmt.Println("Did it failed here?")
 				if reqAttributeType == "number" && (foundAttribType == "int" || foundAttribType == "float32" ||
 					foundAttribType == "float64") {
 					if foundAttribType == "int" {

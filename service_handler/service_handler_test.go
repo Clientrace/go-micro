@@ -1,6 +1,7 @@
 package service_handler
 
 import (
+	"reflect"
 	"testing"
 )
 
@@ -135,8 +136,53 @@ var attribCheckTests = []struct {
 	},
 }
 
+var eventAttributeTests = []struct {
+	testName       string
+	reqEventAttrib map[string]interface{}
+	isValid        bool
+}{
+	{
+		"valid event attributes [string]",
+		map[string]interface{}{
+			"DataType":   "string",
+			"IsRequired": true,
+			"MinLength":  10,
+			"MaxLength":  10,
+		},
+		true,
+	},
+	{
+		"valid event attributes [number]",
+		map[string]interface{}{
+			"DataType":   "number",
+			"IsRequired": false,
+			"MinLength":  10,
+			"MaxLength":  10,
+		},
+		true,
+	},
+	{
+		"valid event attributes [boolean]",
+		map[string]interface{}{
+			"DataType":   "boolean",
+			"IsRequired": false,
+			"MinLength":  10,
+			"MaxLength":  10,
+		},
+		true,
+	}, {
+		"invalid event attribute",
+		map[string]interface{}{
+			"DataType":   "test",
+			"IsRequired": false,
+			"MinLength":  10,
+			"MaxLength":  10,
+		},
+		false,
+	},
+}
+
 func TestRecursiveAtribCheck(t *testing.T) {
-	// Test Specifications for request attribute
 	requestSpec := ReqEventSpec{
 		ReqEventAttributes: map[string]interface{}{
 			"username": map[string]interface{}{
@@ -154,6 +200,27 @@ func TestRecursiveAtribCheck(t *testing.T) {
 			got, _ := recursiveAttributeCheck("testEndpoint", requestSpec, tt.attributes, 0)
 			if got != tt.want {
 				t.Errorf("recursive attribute check got %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNewEventAttrib(t *testing.T) {
+	for _, tt := range eventAttributeTests {
+		t.Run(tt.testName, func(t *testing.T) {
+			defer func() {
+				if err := recover(); err == nil && !tt.isValid {
+					t.Error("Invalid attribute not caught")
+				}
+			}()
+			reqAttribInstance := NewReqEvenAttrib(
+				tt.reqEventAttrib["DataType"].(string),
+				tt.reqEventAttrib["IsRequired"].(bool),
+				tt.reqEventAttrib["MinLength"].(int),
+				tt.reqEventAttrib["MaxLength"].(int),
+			)
+			if reflect.TypeOf(reqAttribInstance).String() != "service_handler.ReqEventAttrib" {
+				t.Error("Invalid ReqEventAttrib")
 			}
 		})
 	}
