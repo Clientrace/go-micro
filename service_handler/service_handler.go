@@ -9,6 +9,7 @@ import (
 const ATTRIBUTE_OK string = "ATTRIBUTE_OK"
 const MISSING_ATTRIBUTE_ERROR string = "MISSING_ATTRIBUTE"
 const INVALID_ATTRIBUTE_TYPE_ERROR string = "INVALID_ATTRIBUTE_TYPE"
+const INVALID_ATTRIBUTE_LENGTH_ERROR string = "INVALID_ATTRIBUTE_LENGTH"
 
 /* Required Event Specification Attribute */
 type ReqEventAttrib struct {
@@ -88,9 +89,11 @@ func recursiveAttributeCheck(endpoint string, reqEventSpec ReqEventSpec, attribu
 
 	// Iterate through required attributes
 	for k := range rqa {
+		fmt.Println("processing", k)
 		if val, ok := attributes[k]; ok {
 			fmt.Println("\tChecking Required Attribute ", k, val)
 			if reflect.TypeOf(rqa[k]).Kind().String() == "map" {
+				fmt.Println(reflect.TypeOf(attributes[k]).String())
 				if reflect.TypeOf(attributes[k]).String() == "map[string]interface {}" {
 					fmt.Println("\t> Parsing Parent Attribute")
 					// Create ReqEventSpec for child attribute
@@ -118,12 +121,12 @@ func recursiveAttributeCheck(endpoint string, reqEventSpec ReqEventSpec, attribu
 				if reqAttributeType == "string" && foundAttribType == "string" {
 					if !(len(attributes[k].(string)) >= reqAttributeMinLength && len(attributes[k].(string)) <
 						reqAttributeMaxLength) {
-						return INVALID_ATTRIBUTE_TYPE_ERROR, fmt.Errorf(
+						return INVALID_ATTRIBUTE_LENGTH_ERROR, fmt.Errorf(
 							"invalid length of attribute %v. expected",
 							k,
 						)
 					}
-				} else {
+				} else if reqAttributeType == "string" && foundAttribType != "string" {
 					return INVALID_ATTRIBUTE_TYPE_ERROR, fmt.Errorf(
 						"invalid type of attribute %v. expected string, got %v",
 						k,
@@ -134,28 +137,23 @@ func recursiveAttributeCheck(endpoint string, reqEventSpec ReqEventSpec, attribu
 					foundAttribType == "float64") {
 					if !(len(attributes[k].(string)) >= reqAttributeMinLength && len(attributes[k].(string)) <
 						reqAttributeMaxLength) {
-						return INVALID_ATTRIBUTE_TYPE_ERROR, fmt.Errorf(
+						return INVALID_ATTRIBUTE_LENGTH_ERROR, fmt.Errorf(
 							"invalid length of attribute %v. expected",
 							k,
 						)
 					}
-				} else {
+				} else if reqAttributeType == "number" && !(foundAttribType == "int" || foundAttribType == "float32" ||
+					foundAttribType == "float64") {
 					return INVALID_ATTRIBUTE_TYPE_ERROR, fmt.Errorf(
 						"invalid type of attribute %v. expected number(int or float) got %v",
 						k,
 						attributes[k],
 					)
 				}
-				if reqAttributeType == "boolean" && foundAttribType == "bool" {
+				if reqAttributeType == "boolean" && foundAttribType != "bool" {
 					return INVALID_ATTRIBUTE_TYPE_ERROR, fmt.Errorf(
 						"invalid length of attribute %v. expected",
 						k,
-					)
-				} else {
-					return INVALID_ATTRIBUTE_TYPE_ERROR, fmt.Errorf(
-						"invalid type of attribute %v. expected number(boolean) got %v",
-						k,
-						attributes[k],
 					)
 				}
 			}
