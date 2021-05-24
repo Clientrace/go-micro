@@ -57,19 +57,19 @@ type ServiceHandler interface {
 // }
 
 // Create new Required Event Attributes
-func NewReqEvenAttrib(dataType string, isRequired bool, minLength int, maxLength int) *ReqEventAttrib {
+func NewReqEvenAttrib(dataType string, isRequired bool, minLength int, maxLength int) ReqEventAttrib {
 	validDataTypes := []string{"string", "number", "boolean"}
-	invalidDataType := false
+	invalidDataType := true
 	for _, v := range validDataTypes {
 		if v == dataType {
-			invalidDataType = true
+			invalidDataType = false
 			break
 		}
 	}
 	if invalidDataType {
 		panic("invalid attribute type, attribute type can only be of the ff [string ,number, boolean]")
 	}
-	return &ReqEventAttrib{
+	return ReqEventAttrib{
 		DataType:   dataType,
 		IsRequired: isRequired,
 		MinLength:  minLength,
@@ -142,6 +142,18 @@ func recursiveAttributeCheck(endpoint string, reqEventSpec ReqEventSpec, attribu
 				} else {
 					return INVALID_ATTRIBUTE_TYPE_ERROR, fmt.Errorf(
 						"invalid type of attribute %v. expected number(int or float) got %v",
+						k,
+						attributes[k],
+					)
+				}
+				if reqAttributeType == "boolean" && foundAttribType == "bool" {
+					return INVALID_ATTRIBUTE_TYPE_ERROR, fmt.Errorf(
+						"invalid length of attribute %v. expected",
+						k,
+					)
+				} else {
+					return INVALID_ATTRIBUTE_TYPE_ERROR, fmt.Errorf(
+						"invalid type of attribute %v. expected number(boolean) got %v",
 						k,
 						attributes[k],
 					)

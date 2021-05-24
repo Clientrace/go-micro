@@ -36,6 +36,16 @@ var attribCheckTests = []struct {
 		INVALID_ATTRIBUTE_TYPE_ERROR,
 	},
 	{
+		"attribute type checking [invalid boolean]",
+		map[string]interface{}{
+			"username":   "test_username",
+			"email":      "test email",
+			"age":        5,
+			"isEmployed": "testValue",
+		},
+		INVALID_ATTRIBUTE_TYPE_ERROR,
+	},
+	{
 		"missing child key check",
 		map[string]interface{}{
 			"username": map[string]interface{}{},
@@ -47,9 +57,39 @@ var attribCheckTests = []struct {
 	{
 		"invalid child attrib type check",
 		map[string]interface{}{
-			"username": map[string]interface{}{"firstName": 0},
-			"email":    "test@email.com",
-			"age":      2,
+			"username": map[string]interface{}{
+				"firstName":  0,
+				"lastName":   "testLastname",
+				"middleName": "testMiddlename",
+			},
+			"email": "test@email.com",
+			"age":   2,
+		},
+		INVALID_ATTRIBUTE_TYPE_ERROR,
+	},
+	{
+		"invalid length, string length too short",
+		map[string]interface{}{
+			"username": map[string]interface{}{
+				"firstName":  "1",
+				"lastName":   "testLastname",
+				"middleName": "testMiddlename",
+			},
+			"email": "test@email.com",
+			"age":   2,
+		},
+		INVALID_ATTRIBUTE_TYPE_ERROR,
+	},
+	{
+		"invalid length, string length too short",
+		map[string]interface{}{
+			"username": map[string]interface{}{
+				"firstName":  "",
+				"lastName":   "testLastname",
+				"middleName": "testMiddlename",
+			},
+			"email": "test@email.com",
+			"age":   2,
 		},
 		INVALID_ATTRIBUTE_TYPE_ERROR,
 	},
@@ -60,7 +100,7 @@ func TestRecursiveAtribCheck(t *testing.T) {
 	requestSpec := ReqEventSpec{
 		ReqEventAttributes: map[string]interface{}{
 			"username": map[string]interface{}{
-				"firstName":  NewReqEvenAttrib("string", true, 4, 4),
+				"firstName":  NewReqEvenAttrib("string", true, 4, 15),
 				"lastName":   NewReqEvenAttrib("string", true, 4, 255),
 				"middleName": NewReqEvenAttrib("string", true, 4, 255),
 			},
