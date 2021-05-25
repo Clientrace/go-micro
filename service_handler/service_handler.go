@@ -1,8 +1,11 @@
 package service_handler
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
+
+	"github.com/aws/aws-lambda-go/events"
 )
 
 /* Attribute Parse Codes */
@@ -17,7 +20,7 @@ const (
 const (
 	REQ_BODY     = iota
 	QUERY_PARAMS = iota
-	PATH_PARAM   = iota
+	PATH_PARAMS  = iota
 )
 
 /* Required Event Specification Attribute */
@@ -26,6 +29,13 @@ type ReqEventAttrib struct {
 	IsRequired bool
 	MinLength  int
 	MaxLength  int
+}
+
+/* Service Event specification */
+type ServiceSpec struct {
+	RequiredRequestBody ReqEventSpec
+	RequiredQueryParams ReqEventSpec
+	RequiredPathParams  ReqEventSpec
 }
 
 /* Required Event specification */
@@ -42,17 +52,31 @@ type Identity struct {
 
 /* Request on Service Event */
 type ServiceEvent struct {
-	Identity
+	Identity    Identity
 	RequestBody map[string]interface{}
 	QueryParams map[string]interface{}
 	PathParams  map[string]interface{}
 }
 
-type Service struct {
+type ServiceHandler interface {
+	NewService(ServiceSpec) ServiceEvent
+	NewReqEvenAttrib(string, bool, int, int) ReqEventAttrib
 }
 
-type ServiceHandler interface {
-	NewService(ServiceEvent)
+type AWSServiceHandler struct {
+	event events.APIGatewayProxyRequest
+}
+
+/*
+	Cause a panic in service handler for the
+	http_exceptions to catch orrecover from.
+*/
+func causePanic(paramType int, parseCode int, errorMsg string) {
+	panic(map[string]interface{}{
+		"paramType": paramType,
+		"errorMsg":  errorMsg,
+		"parseCode": parseCode,
+	})
 }
 
 /*
@@ -61,30 +85,56 @@ type ServiceHandler interface {
 	event AWS  HTTP Event
 	requestFmt Required event body format
 */
-// func (sh ServiceEvent) NewService(event events.APIGatewayProxyRequest,
-// 	bodyFmt ReqEventSpec, queryPrmsFmt ReqEventSpec, pathPrmsFmt ReqEventSpec) (ServiceEvent, error) {
-// 	requestEndpoint := event.RequestContext.ResourcePath
+func (ah AWSServiceHandler) NewService(ss ServiceSpec) ServiceEvent {
+	requestEndpoint := ah.event.RequestContext.ResourcePath
 
-// 	var requestBody map[string]interface{}
-// 	queryParams := event.QueryStringParameters
-// 	pathParams := event.PathParameters
+	var requestBody map[string]interface{}
+	queryParamsMapBuffer := ah.event.QueryStringParameters
+	pathParamsMapBuffer := ah.event.PathParameters
 
-// 	// Convert JSON String body to map
-// 	json.Unmarshal([]byte(event.Body), &requestBody)
+	// Convert JSON String body to map
+	json.Unmarshal([]byte(ah.event.Body), &requestBody)
 
-// 	parseCode, err_message := recursiveAttributeCheck(requestEndpoint, bodyFmt, requestBody, 0)
-// 	if parseCode != ATTRIBUTE_OK {
-// 		panic(map[string]interface{}{
-// 			"paramType": "REQ_BODY",
-// 			"errorMsg":  err_message,
-// 			"parseCode": parseCode,
-// 		})
-// 	}
+	parseCode, errMsg := recursiveAttributeCheck(requestEndpoint, ss.RequiredRequestBody, requestBody, 0)
+	if parseCode != ATTRIBUTE_OK {
+		causePanic(REQ_BODY, parseCode, errMsg)
+	}
 
-// }
+	// Covert queryParamsBuffer of map[string]string type to map[string]interface{}
+	queryParams := make(map[string]interface{}, len(queryParamsMapBuffer))
+	for k, v := range queryParamsMapBuffer {
+		queryParams[k] = v
+	}
+	parseCode, errMsg = recursiveAttributeCheck(requestEndpoint, ss.RequiredQueryParams, queryParams, 0)
+	if parseCode != ATTRIBUTE_OK {
+		causePanic(QUERY_PARAMS, parseCode, errMsg)
+	}
+
+	// Covert pathParams of map[string]string type to map[string]interface{}
+	pathParams := make(map[string]interface{}, len(pathParamsMapBuffer))
+	for k, v := range queryParamsMapBuffer {
+		pathParams[k] = v
+	}
+	parseCode, errMsg = recursiveAttributeCheck(requestEndpoint, ss.RequiredPathParams, pathParams, 0)
+	if parseCode != ATTRIBUTE_OK {
+		causePanic(PATH_PARAMS, parseCode, errMsg)
+	}
+
+	//TODO: implement proper identity parser
+	return ServiceEvent{
+		PathParams:  pathParams,
+		RequestBody: requestBody,
+		QueryParams: queryParams,
+		Identity: Identity{
+			Email:    "test@email.com",
+			Username: "testusername",
+			Role:     "testRole",
+		},
+	}
+}
 
 // Create new Required Event Attributes
-func NewReqEvenAttrib(dataType string, isRequired bool, minLength int, maxLength int) ReqEventAttrib {
+func (ah AWSServiceHandler) NewReqEvenAttrib(dataType string, isRequired bool, minLength int, maxLength int) ReqEventAttrib {
 	validDataTypes := []string{"string", "number", "boolean"}
 	invalidDataType := true
 	for _, v := range validDataTypes {
