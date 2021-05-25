@@ -13,7 +13,7 @@ var AGE_INVALID_INT_VALUE int = 10000000000
 var attribCheckTests = []struct {
 	testName   string
 	attributes map[string]interface{}
-	want       string
+	want       int
 }{
 	{
 		"attribute OK",
