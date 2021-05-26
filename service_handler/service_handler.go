@@ -44,16 +44,9 @@ type ReqEventSpec struct {
 	ReqEventAttributes map[string]interface{}
 }
 
-/* Requester Identity */
-type Identity struct {
-	Email    string
-	Username string
-	Role     string
-}
-
 /* Request on Service Event */
 type ServiceEvent struct {
-	Identity    Identity
+	Identity    events.APIGatewayRequestIdentity
 	RequestBody map[string]interface{}
 	QueryParams map[string]interface{}
 	PathParams  map[string]interface{}
@@ -88,6 +81,8 @@ func causePanic(paramType int, parseCode int, errorMsg string) {
 */
 func (ah AWSServiceHandler) NewService(ss ServiceSpec) ServiceEvent {
 	requestEndpoint := ah.event.RequestContext.ResourcePath
+
+	identity := ah.event.RequestContext.Identity
 
 	var requestBody map[string]interface{}
 	queryParamsMapBuffer := ah.event.QueryStringParameters
@@ -129,11 +124,7 @@ func (ah AWSServiceHandler) NewService(ss ServiceSpec) ServiceEvent {
 		PathParams:  pathParams,
 		RequestBody: requestBody,
 		QueryParams: queryParams,
-		Identity: Identity{
-			Email:    "test@email.com",
-			Username: "testusername",
-			Role:     "testRole",
-		},
+		Identity:    identity,
 	}
 }
 
