@@ -1,9 +1,7 @@
 package service_handler
 
 import (
-	"encoding/json"
 	"fmt"
-	"log"
 	"reflect"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -54,11 +52,6 @@ type ServiceEvent struct {
 
 type ServiceHandler interface {
 	NewService(ServiceSpec) ServiceEvent
-	NewReqEvenAttrib(string, bool, int, int) ReqEventAttrib
-}
-
-type AWSServiceHandler struct {
-	event events.APIGatewayProxyRequest
 }
 
 /*
@@ -74,62 +67,9 @@ func causePanic(paramType int, parseCode int, errorMsg string) {
 }
 
 /*
-	@Exported Function
-	Parse AWS Event to get the identity and requests objects
-	event AWS  HTTP Event
-	requestFmt Required event body format
+	Create new Required Event Attributes
 */
-func (ah AWSServiceHandler) NewService(ss ServiceSpec) ServiceEvent {
-	requestEndpoint := ah.event.RequestContext.ResourcePath
-
-	identity := ah.event.RequestContext.Identity
-
-	var requestBody map[string]interface{}
-	queryParamsMapBuffer := ah.event.QueryStringParameters
-	pathParamsMapBuffer := ah.event.PathParameters
-
-	// Convert JSON String body to map
-	json.Unmarshal([]byte(ah.event.Body), &requestBody)
-
-	parseCode, errMsg := recursiveAttributeCheck(requestEndpoint, ss.RequiredRequestBody, requestBody, 0)
-	if parseCode != ATTRIBUTE_OK {
-		log.Println("Invalid Request Body", errMsg)
-		causePanic(REQ_BODY, parseCode, errMsg)
-	}
-
-	// Covert queryParamsBuffer of map[string]string type to map[string]interface{}
-	queryParams := make(map[string]interface{}, len(queryParamsMapBuffer))
-	for k, v := range queryParamsMapBuffer {
-		queryParams[k] = v
-	}
-	parseCode, errMsg = recursiveAttributeCheck(requestEndpoint, ss.RequiredQueryParams, queryParams, 0)
-	if parseCode != ATTRIBUTE_OK {
-		log.Println("Invalid Query Params", errMsg)
-		causePanic(QUERY_PARAMS, parseCode, errMsg)
-	}
-
-	// Covert pathParams of map[string]string type to map[string]interface{}
-	pathParams := make(map[string]interface{}, len(pathParamsMapBuffer))
-	for k, v := range pathParamsMapBuffer {
-		pathParams[k] = v
-	}
-	parseCode, errMsg = recursiveAttributeCheck(requestEndpoint, ss.RequiredPathParams, pathParams, 0)
-	if parseCode != ATTRIBUTE_OK {
-		log.Println("Invalid Path Params", errMsg)
-		causePanic(PATH_PARAMS, parseCode, errMsg)
-	}
-
-	//TODO: implement proper identity parser
-	return ServiceEvent{
-		PathParams:  pathParams,
-		RequestBody: requestBody,
-		QueryParams: queryParams,
-		Identity:    identity,
-	}
-}
-
-// Create new Required Event Attributes
-func (ah AWSServiceHandler) NewReqEvenAttrib(dataType string, isRequired bool, minLength int, maxLength int) ReqEventAttrib {
+func NewReqEvenAttrib(dataType string, isRequired bool, minLength int, maxLength int) ReqEventAttrib {
 	validDataTypes := []string{"string", "number", "boolean"}
 	invalidDataType := true
 	for _, v := range validDataTypes {
@@ -150,10 +90,7 @@ func (ah AWSServiceHandler) NewReqEvenAttrib(dataType string, isRequired bool, m
 
 }
 
-/*
-	@Internal Function
-	Check request attributes deep. See if passed attribute match the specs
-*/
+// Check request attributes deep. See if passed attribute match the specs
 func recursiveAttributeCheck(endpoint string, reqEventSpec ReqEventSpec, attributes map[string]interface{}, depth int) (int, string) {
 	rqa := reqEventSpec.ReqEventAttributes
 

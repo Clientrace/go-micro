@@ -3,8 +3,6 @@ package service_handler
 import (
 	"reflect"
 	"testing"
-
-	"github.com/aws/aws-lambda-go/events"
 )
 
 var AGE_INVALID_FLOAT32_VALUE float32 = 0.11
@@ -258,134 +256,17 @@ var eventAttributeTests = []struct {
 	},
 }
 
-var serviceHandler ServiceHandler = AWSServiceHandler{
-	event: events.APIGatewayProxyRequest{
-		Resource: "mockResource",
-		Path:     "mockPath",
-		QueryStringParameters: map[string]string{
-			"fields": "firstname",
-		},
-		PathParameters: map[string]string{
-			"department": "IT",
-		},
-		RequestContext: events.APIGatewayProxyRequestContext{
-			ResourcePath: "mockResourcepath",
-			Identity:     events.APIGatewayRequestIdentity{},
-		},
-		Body: `
-				{
-					"firstname" : "juan",
-					"middlename" : "ponce",
-					"lastname" : "dela cruz"
-				}
-			`,
-	},
-}
-
-var newServiceTests = []struct {
-	testName string
-	awsEvent events.APIGatewayProxyRequest
-	isValid  bool
-}{
-	{
-		"valid request",
-		newAWSMockEvent(
-			map[string]string{
-				"fields": "firstname",
-			},
-			map[string]string{
-				"department": "IT",
-			},
-			`
-				{
-					"firstname" : "juan",
-					"middlename" : "ponce",
-					"lastname" : "dela cruz"
-				}
-			`,
-		),
-		true,
-	},
-	{
-		"invalid request body",
-		newAWSMockEvent(
-			map[string]string{
-				"fields": "firstname",
-			},
-			map[string]string{
-				"department": "IT",
-			},
-			`
-				{
-					"firstname" : ""
-				}
-			`,
-		),
-		false,
-	},
-	{
-		"invalid query params",
-		newAWSMockEvent(
-			map[string]string{},
-			map[string]string{
-				"department": "IT",
-			},
-			`
-				{
-					"firstname": "juan",
-					"middlename": "ponce",
-					"lastname": "dela cruz"
-				}
-			`,
-		),
-		false,
-	},
-	{
-		"invalid path params",
-		newAWSMockEvent(
-			map[string]string{
-				"fields": "firstname",
-			},
-			map[string]string{},
-			`
-				{
-					"firstname": "juan",
-					"middlename": "ponce",
-					"lastname": "dela cruz"
-				}
-			`,
-		),
-		false,
-	},
-}
-
-func newAWSMockEvent(qParam map[string]string, pParam map[string]string,
-	body string) events.APIGatewayProxyRequest {
-	return events.APIGatewayProxyRequest{
-		Resource:              "mockResource",
-		Path:                  "mockPath",
-		QueryStringParameters: qParam,
-		PathParameters:        pParam,
-		RequestContext: events.APIGatewayProxyRequestContext{
-			ResourcePath: "mockResourcePath",
-			Identity:     events.APIGatewayRequestIdentity{},
-		},
-		Body: body,
-	}
-}
-
 func TestRecursiveAtribCheck(t *testing.T) {
-	var serviceHandler ServiceHandler = AWSServiceHandler{}
 	requestSpec := ReqEventSpec{
 		ReqEventAttributes: map[string]interface{}{
 			"username": map[string]interface{}{
-				"firstName":  serviceHandler.NewReqEvenAttrib("string", true, 4, 15),
-				"lastName":   serviceHandler.NewReqEvenAttrib("string", true, 4, 255),
-				"middleName": serviceHandler.NewReqEvenAttrib("string", true, 4, 255),
+				"firstName":  NewReqEvenAttrib("string", true, 4, 15),
+				"lastName":   NewReqEvenAttrib("string", true, 4, 255),
+				"middleName": NewReqEvenAttrib("string", true, 4, 255),
 			},
-			"email":      serviceHandler.NewReqEvenAttrib("string", true, 4, 250),
-			"age":        serviceHandler.NewReqEvenAttrib("number", true, 1, 1000),
-			"isEmployed": serviceHandler.NewReqEvenAttrib("boolean", true, 0, 0),
+			"email":      NewReqEvenAttrib("string", true, 4, 250),
+			"age":        NewReqEvenAttrib("number", true, 1, 1000),
+			"isEmployed": NewReqEvenAttrib("boolean", true, 0, 0),
 		},
 	}
 	for _, tt := range attribCheckTests {
@@ -399,8 +280,6 @@ func TestRecursiveAtribCheck(t *testing.T) {
 }
 
 func TestNewEventAttrib(t *testing.T) {
-	var serviceHandler ServiceHandler = AWSServiceHandler{}
-
 	for _, tt := range eventAttributeTests {
 		t.Run(tt.testName, func(t *testing.T) {
 			defer func() {
@@ -408,7 +287,7 @@ func TestNewEventAttrib(t *testing.T) {
 					t.Error("Invalid attribute not caught")
 				}
 			}()
-			reqAttribInstance := serviceHandler.NewReqEvenAttrib(
+			reqAttribInstance := NewReqEvenAttrib(
 				tt.reqEventAttrib["DataType"].(string),
 				tt.reqEventAttrib["IsRequired"].(bool),
 				tt.reqEventAttrib["MinLength"].(int),
@@ -419,43 +298,4 @@ func TestNewEventAttrib(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestNewService(t *testing.T) {
-	serviceSpec := ServiceSpec{
-		RequiredRequestBody: ReqEventSpec{
-			ReqEventAttributes: map[string]interface{}{
-				"firstname":  serviceHandler.NewReqEvenAttrib("string", true, 2, 50),
-				"lastname":   serviceHandler.NewReqEvenAttrib("string", true, 2, 50),
-				"middlename": serviceHandler.NewReqEvenAttrib("string", true, 2, 50),
-			}},
-		RequiredQueryParams: ReqEventSpec{
-			ReqEventAttributes: map[string]interface{}{
-				"fields": serviceHandler.NewReqEvenAttrib("string", true, 4, 50),
-			},
-		},
-		RequiredPathParams: ReqEventSpec{
-			ReqEventAttributes: map[string]interface{}{
-				"department": serviceHandler.NewReqEvenAttrib("string", true, 2, 50),
-			},
-		},
-	}
-
-	for _, tt := range newServiceTests {
-		t.Run(tt.testName, func(t *testing.T) {
-			defer func() {
-				if err := recover(); err == nil && !tt.isValid {
-					t.Error("Invalid request not caught")
-				}
-			}()
-			var service_handler ServiceHandler = AWSServiceHandler{
-				event: tt.awsEvent,
-			}
-			serviceEvent := service_handler.NewService(serviceSpec)
-			if reflect.TypeOf(serviceEvent).String() != "service_handler.ServiceEvent" {
-				t.Error("Invalid ReqEventAttrib")
-			}
-		})
-	}
-
 }
