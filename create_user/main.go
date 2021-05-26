@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
+	"log"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -20,10 +20,10 @@ type EventSpec interface {
 }
 
 // Handler is our lambda handler invoked by the `lambda.Start` function call
-func Handler(ctx context.Context, event events.APIGatewayCustomAuthorizerRequest) (Response, error) {
+func Handler(ctx context.Context, event events.APIGatewayProxyRequest) (Response, error) {
 	var buf bytes.Buffer
 
-	fmt.Println(event)
+	log.Println(event)
 
 	body, err := json.Marshal(map[string]interface{}{
 		"message": "Go Serverless v1.0! Your function executed successfully!",

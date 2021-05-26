@@ -3,6 +3,7 @@ package service_handler
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"reflect"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -97,6 +98,7 @@ func (ah AWSServiceHandler) NewService(ss ServiceSpec) ServiceEvent {
 
 	parseCode, errMsg := recursiveAttributeCheck(requestEndpoint, ss.RequiredRequestBody, requestBody, 0)
 	if parseCode != ATTRIBUTE_OK {
+		log.Println("Invalid Request Body", errMsg)
 		causePanic(REQ_BODY, parseCode, errMsg)
 	}
 
@@ -107,16 +109,18 @@ func (ah AWSServiceHandler) NewService(ss ServiceSpec) ServiceEvent {
 	}
 	parseCode, errMsg = recursiveAttributeCheck(requestEndpoint, ss.RequiredQueryParams, queryParams, 0)
 	if parseCode != ATTRIBUTE_OK {
+		log.Println("Invalid Query Params", errMsg)
 		causePanic(QUERY_PARAMS, parseCode, errMsg)
 	}
 
 	// Covert pathParams of map[string]string type to map[string]interface{}
 	pathParams := make(map[string]interface{}, len(pathParamsMapBuffer))
-	for k, v := range queryParamsMapBuffer {
+	for k, v := range pathParamsMapBuffer {
 		pathParams[k] = v
 	}
 	parseCode, errMsg = recursiveAttributeCheck(requestEndpoint, ss.RequiredPathParams, pathParams, 0)
 	if parseCode != ATTRIBUTE_OK {
+		log.Println("Invalid Path Params", errMsg)
 		causePanic(PATH_PARAMS, parseCode, errMsg)
 	}
 
@@ -192,11 +196,13 @@ func recursiveAttributeCheck(endpoint string, reqEventSpec ReqEventSpec, attribu
 				foundAttribType := reflect.TypeOf(attributes[k]).String()
 
 				if reqAttributeType == "string" && foundAttribType == "string" {
-					if !(len(attributes[k].(string)) >= reqAttributeMinLength && len(attributes[k].(string)) <
+					if !(len(attributes[k].(string)) >= reqAttributeMinLength && len(attributes[k].(string)) <=
 						reqAttributeMaxLength) {
 						return INVALID_ATTRIBUTE_LENGTH_ERROR, fmt.Sprintf(
-							"invalid length of attribute %v. expected",
+							"invalid length of attribute %v. min length: %d, max length: %d",
 							k,
+							reqAttributeMinLength,
+							reqAttributeMaxLength,
 						)
 					}
 				} else if reqAttributeType == "string" && foundAttribType != "string" {
@@ -209,29 +215,35 @@ func recursiveAttributeCheck(endpoint string, reqEventSpec ReqEventSpec, attribu
 				if reqAttributeType == "number" && (foundAttribType == "int" || foundAttribType == "float32" ||
 					foundAttribType == "float64") {
 					if foundAttribType == "int" {
-						if !(attributes[k].(int) >= reqAttributeMinLength && attributes[k].(int) <
+						if !(attributes[k].(int) >= reqAttributeMinLength && attributes[k].(int) <=
 							reqAttributeMaxLength) {
 							return INVALID_ATTRIBUTE_LENGTH_ERROR, fmt.Sprintf(
-								"invalid length of attribute %v. expected",
+								"invalid length of attribute %v. min length: %d, max length: %d",
 								k,
+								reqAttributeMinLength,
+								reqAttributeMaxLength,
 							)
 						}
 					}
 					if foundAttribType == "float64" {
-						if !(attributes[k].(float64) >= float64(reqAttributeMinLength) && attributes[k].(float64) <
+						if !(attributes[k].(float64) >= float64(reqAttributeMinLength) && attributes[k].(float64) <=
 							float64(reqAttributeMaxLength)) {
 							return INVALID_ATTRIBUTE_LENGTH_ERROR, fmt.Sprintf(
-								"invalid length of attribute %v. expected",
+								"invalid length of attribute %v. min length: %d, max length: %d",
 								k,
+								reqAttributeMinLength,
+								reqAttributeMaxLength,
 							)
 						}
 					}
 					if foundAttribType == "float32" {
-						if !(attributes[k].(float32) >= float32(reqAttributeMinLength) && attributes[k].(float32) <
+						if !(attributes[k].(float32) >= float32(reqAttributeMinLength) && attributes[k].(float32) <=
 							float32(reqAttributeMaxLength)) {
 							return INVALID_ATTRIBUTE_LENGTH_ERROR, fmt.Sprintf(
-								"invalid length of attribute %v. expected",
+								"invalid length of attribute %v. min length: %d, max length: %d",
 								k,
+								reqAttributeMinLength,
+								reqAttributeMaxLength,
 							)
 						}
 					}

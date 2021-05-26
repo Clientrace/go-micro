@@ -311,14 +311,10 @@ func TestNewService(t *testing.T) {
 			Resource: "mockResource",
 			Path:     "mockPath",
 			QueryStringParameters: map[string]string{
-				"first":             "queryStringValue1",
-				"queryStringParam2": "queryStringValue2",
-				"queryStringParam3": "queryStringValue3",
+				"fields": "firstname",
 			},
 			PathParameters: map[string]string{
-				"pathParam1": "pathParamValue1",
-				"pathParam2": "pathParamValue2",
-				"pathParam3": "pathParamValue3",
+				"department": "IT",
 			},
 			RequestContext: events.APIGatewayProxyRequestContext{
 				ResourcePath: "mockResourcepath",
@@ -326,9 +322,9 @@ func TestNewService(t *testing.T) {
 			},
 			Body: `
 				{
-					"bodyParam1" : "bodyParamValue1",
-					"bodyParam2" : "bodyParamValue2",
-					"bodyParam3" : "bodyParamValue3"
+					"firstname" : "juan",
+					"middlename" : "ponce",
+					"lastname" : "dela cruz"
 				}
 			`,
 		},
@@ -336,26 +332,26 @@ func TestNewService(t *testing.T) {
 	serviceSpec := ServiceSpec{
 		RequiredRequestBody: ReqEventSpec{
 			ReqEventAttributes: map[string]interface{}{
-				"firstname":  serviceHandler.NewReqEvenAttrib("string", true, 10, 10),
-				"lastname":   serviceHandler.NewReqEvenAttrib("string", true, 10, 10),
-				"middlename": serviceHandler.NewReqEvenAttrib("string", true, 10, 10),
+				"firstname":  serviceHandler.NewReqEvenAttrib("string", true, 4, 50),
+				"lastname":   serviceHandler.NewReqEvenAttrib("string", true, 4, 50),
+				"middlename": serviceHandler.NewReqEvenAttrib("string", true, 4, 50),
 			}},
 		RequiredQueryParams: ReqEventSpec{
 			ReqEventAttributes: map[string]interface{}{
-				"filterBy": serviceHandler.NewReqEvenAttrib("string", true, 10, 10),
+				"fields": serviceHandler.NewReqEvenAttrib("string", true, 4, 50),
 			},
 		},
 		RequiredPathParams: ReqEventSpec{
 			ReqEventAttributes: map[string]interface{}{
-				"category": serviceHandler.NewReqEvenAttrib("string", true, 10, 10),
+				"department": serviceHandler.NewReqEvenAttrib("string", true, 2, 50),
 			},
 		},
 	}
 	var testService = serviceHandler.NewService(serviceSpec)
 	wantIdentity := Identity{
-		Email:    "test@gmail.com",
+		Email:    "test@email.com",
 		Username: "testusername",
-		Role:     "testuserrole",
+		Role:     "testRole",
 	}
 
 	if testService.Identity != wantIdentity {
