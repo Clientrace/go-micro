@@ -137,3 +137,39 @@ func TestNewService(t *testing.T) {
 	}
 
 }
+
+func TestAWSNewResponse(t *testing.T) {
+	var service_handler = AWSServiceHandler{
+		event: events.APIGatewayProxyRequest{},
+	}
+
+	want := AWSResponse{
+		StatusCode:      200,
+		IsBase64Encoded: false,
+		Body: `{
+			"message" : "OK"
+		}`,
+		Headers: map[string]string{
+			"Content-Type": "application/json",
+		},
+	}
+
+	got := service_handler.NewHTTPResponse(ServiceResponse{
+		StatusCode: 200,
+		ReturnBody: `{
+			"message" : "OK"
+		}`,
+		ReturnHeaders: map[string]string{
+			"Content-Type": "application/json",
+		},
+	})
+
+	if want.StatusCode != got.(AWSResponse).StatusCode {
+		t.Errorf("Invalid AWS Service Response Status Code")
+	}
+
+	if want.Body != got.(AWSResponse).Body {
+		t.Errorf("Invalid AWS Service Response Body")
+	}
+
+}

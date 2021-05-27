@@ -14,6 +14,8 @@ type AWSServiceHandler struct {
 	event events.APIGatewayProxyRequest
 }
 
+type AWSResponse events.APIGatewayProxyResponse
+
 /*
 	Parse AWS Event to get the identity and requests objects
 	and returns ServiceEvent object.
@@ -63,5 +65,14 @@ func (ah AWSServiceHandler) NewService(ss ServiceSpec) ServiceEvent {
 		RequestBody: requestBody,
 		QueryParams: queryParams,
 		Identity:    identity,
+	}
+}
+
+func (ah AWSServiceHandler) NewHTTPResponse(sr ServiceResponse) interface{} {
+	return AWSResponse{
+		StatusCode:      sr.StatusCode,
+		IsBase64Encoded: false,
+		Body:            sr.ReturnBody,
+		Headers:         sr.ReturnHeaders,
 	}
 }
