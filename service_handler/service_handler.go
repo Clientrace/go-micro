@@ -59,7 +59,7 @@ type ServiceResponse struct {
 type ServiceHandler interface {
 	NewService(ServiceSpec) ServiceEvent
 	NewHTTPResponse(ServiceResponse) interface{}
-	HandleExceptions(map[string]string) interface{}
+	HandleExceptions(interface{}, map[string]string) interface{}
 }
 
 var parameterMap = map[int]string{

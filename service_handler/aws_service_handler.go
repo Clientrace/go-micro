@@ -2,6 +2,7 @@ package service_handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"reflect"
 
@@ -76,9 +77,10 @@ func (ah AWSServiceHandler) NewHTTPResponse(sr ServiceResponse) interface{} {
 	}
 }
 
-func (ah AWSServiceHandler) HandleExceptions(returnHeaders map[string]string) interface{} {
-	if err := recover(); err != nil {
-		if reflect.TypeOf(err).String() != "service_handler.ServiceResponse" {
+func (ah AWSServiceHandler) HandleExceptions(recoverPayload interface{}, returnHeaders map[string]string) interface{} {
+	fmt.Println("RECOVERING..")
+	if recoverPayload != nil {
+		if reflect.TypeOf(recoverPayload).String() != "service_handler.HTTPException" {
 			return ah.NewHTTPResponse(ServiceResponse{
 				StatusCode:    INTERNAL_SERVER_ERROR,
 				ReturnBody:    "Internal Server Error",
@@ -86,8 +88,8 @@ func (ah AWSServiceHandler) HandleExceptions(returnHeaders map[string]string) in
 			}).(events.APIGatewayProxyResponse)
 		}
 		return ah.NewHTTPResponse(ServiceResponse{
-			StatusCode:    err.(HTTPException).StatusCode,
-			ReturnBody:    err.(HTTPException).ErrorMessage,
+			StatusCode:    recoverPayload.(HTTPException).StatusCode,
+			ReturnBody:    recoverPayload.(HTTPException).ErrorMessage,
 			ReturnHeaders: returnHeaders,
 		}).(events.APIGatewayProxyResponse)
 	}

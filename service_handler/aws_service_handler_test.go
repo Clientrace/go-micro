@@ -1,6 +1,7 @@
 package service_handler
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -172,4 +173,61 @@ func TestAWSNewResponse(t *testing.T) {
 		t.Errorf("Invalid AWS Service Response Body")
 	}
 
+}
+
+func testBadRequest() (response events.APIGatewayProxyResponse) {
+	returnHeaders := map[string]string{
+		"Content-Type": "application/json",
+	}
+	sh := AWSServiceHandler{
+		event: newAWSMockEvent(
+			map[string]string{},
+			map[string]string{},
+			`{}`,
+		),
+	}
+	requestSpec := ServiceSpec{
+		RequiredRequestBody: ReqEventSpec{
+			ReqEventAttributes: map[string]interface{}{
+				"username": map[string]interface{}{
+					"firstName":  NewReqEvenAttrib("string", true, 4, 15),
+					"lastName":   NewReqEvenAttrib("string", true, 4, 255),
+					"middleName": NewReqEvenAttrib("string", true, 4, 255),
+				},
+			},
+		},
+		RequiredQueryParams: ReqEventSpec{},
+		RequiredPathParams:  ReqEventSpec{},
+	}
+	defer func() {
+		response = sh.HandleExceptions(
+			recover(),
+			returnHeaders,
+		).(events.APIGatewayProxyResponse)
+	}()
+
+	service := sh.NewService(requestSpec)
+	fmt.Println(service.PathParams)
+	fmt.Println(service.QueryParams)
+	fmt.Println(service.RequestBody)
+
+	return response
+}
+
+func TestHandleExceptions(t *testing.T) {
+	gotResponse := testBadRequest()
+	wantResponse := events.APIGatewayProxyResponse{
+		StatusCode:      400,
+		IsBase64Encoded: false,
+		Body:            "Error in Request Body, MISSING ATTRIBUTE ERROR. missin attribute 'middleName'",
+		Headers: map[string]string{
+			"Content-Type": "application/json",
+		},
+	}
+
+	fmt.Println(gotResponse)
+
+	if gotResponse.StatusCode != wantResponse.StatusCode {
+		t.Errorf("Invalid response status code")
+	}
 }
