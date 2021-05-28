@@ -143,7 +143,7 @@ func TestAWSNewResponse(t *testing.T) {
 		event: events.APIGatewayProxyRequest{},
 	}
 
-	want := AWSResponse{
+	want := events.APIGatewayProxyResponse{
 		StatusCode:      200,
 		IsBase64Encoded: false,
 		Body: `{
@@ -164,11 +164,11 @@ func TestAWSNewResponse(t *testing.T) {
 		},
 	})
 
-	if want.StatusCode != got.(AWSResponse).StatusCode {
+	if want.StatusCode != got.(events.APIGatewayProxyResponse).StatusCode {
 		t.Errorf("Invalid AWS Service Response Status Code")
 	}
 
-	if want.Body != got.(AWSResponse).Body {
+	if want.Body != got.(events.APIGatewayProxyResponse).Body {
 		t.Errorf("Invalid AWS Service Response Body")
 	}
 

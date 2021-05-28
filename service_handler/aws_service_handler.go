@@ -3,6 +3,7 @@ package service_handler
 import (
 	"encoding/json"
 	"log"
+	"reflect"
 
 	"github.com/aws/aws-lambda-go/events"
 )
@@ -13,8 +14,6 @@ import (
 type AWSServiceHandler struct {
 	event events.APIGatewayProxyRequest
 }
-
-type AWSResponse events.APIGatewayProxyResponse
 
 /*
 	Parse AWS Event to get the identity and requests objects
@@ -69,10 +68,32 @@ func (ah AWSServiceHandler) NewService(ss ServiceSpec) ServiceEvent {
 }
 
 func (ah AWSServiceHandler) NewHTTPResponse(sr ServiceResponse) interface{} {
-	return AWSResponse{
+	return events.APIGatewayProxyResponse{
 		StatusCode:      sr.StatusCode,
 		IsBase64Encoded: false,
 		Body:            sr.ReturnBody,
 		Headers:         sr.ReturnHeaders,
 	}
+}
+
+func (ah AWSServiceHandler) HandleExceptions(returnHeaders map[string]string) interface{} {
+	if err := recover(); err != nil {
+		if reflect.TypeOf(err).String() != "service_handler.ServiceResponse" {
+			return ah.NewHTTPResponse(ServiceResponse{
+				StatusCode:    INTERNAL_SERVER_ERROR,
+				ReturnBody:    "Internal Server Error",
+				ReturnHeaders: returnHeaders,
+			}).(events.APIGatewayProxyResponse)
+		}
+		return ah.NewHTTPResponse(ServiceResponse{
+			StatusCode:    err.(HTTPException).StatusCode,
+			ReturnBody:    err.(HTTPException).ErrorMessage,
+			ReturnHeaders: returnHeaders,
+		}).(events.APIGatewayProxyResponse)
+	}
+	return ah.NewHTTPResponse(ServiceResponse{
+		StatusCode:    INTERNAL_SERVER_ERROR,
+		ReturnBody:    "Internal Server Error",
+		ReturnHeaders: returnHeaders,
+	}).(events.APIGatewayProxyResponse)
 }

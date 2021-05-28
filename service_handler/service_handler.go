@@ -59,6 +59,7 @@ type ServiceResponse struct {
 type ServiceHandler interface {
 	NewService(ServiceSpec) ServiceEvent
 	NewHTTPResponse(ServiceResponse) interface{}
+	HandleExceptions(map[string]string) interface{}
 }
 
 var parameterMap = map[int]string{
@@ -68,6 +69,7 @@ var parameterMap = map[int]string{
 }
 
 var errMsgMap = map[int]string{
+	MISSING_ATTRIBUTE_ERROR:        "MISSING ATTRIBUTE ERROR",
 	INVALID_ATTRIBUTE_LENGTH_ERROR: "INVALID ATTRIBUTE LENGTH",
 	INVALID_ATTRIBUTE_TYPE_ERROR:   "INVALID ATTRIBUTE TYPE",
 }
@@ -77,10 +79,10 @@ var errMsgMap = map[int]string{
 	http_exceptions to catch orrecover from.
 */
 func causePanic(paramType int, parseCode int, errorMsg string) {
-	panic(HTTPException{
-		StatusCode:   BAD_REQUEST,
-		ErrorMessage: fmt.Sprintf("Error in %v, %v. %v", parameterMap[paramType], errMsgMap[parseCode], errorMsg),
-	})
+	RaiseHTTPException(
+		BAD_REQUEST,
+		fmt.Sprintf("Error in %v, %v. %v", parameterMap[paramType], errMsgMap[parseCode], errorMsg),
+	)
 }
 
 /*
