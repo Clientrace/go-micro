@@ -214,7 +214,56 @@ func testBadRequest() (response events.APIGatewayProxyResponse) {
 	return response
 }
 
-func TestHandleExceptions(t *testing.T) {
+func testInternalServerError() (response events.APIGatewayProxyResponse) {
+	returnHeaders := map[string]string{
+		"Content-Type": "application/json",
+	}
+	sh := AWSServiceHandler{
+		event: newAWSMockEvent(
+			map[string]string{},
+			map[string]string{},
+			`{
+				"username": {
+					"firstName": "clarence",
+					"lastName" : "penaflor",
+					"middleName": "par"
+				}
+			}`,
+		),
+	}
+	requestSpec := ServiceSpec{
+		RequiredRequestBody: ReqEventSpec{
+			ReqEventAttributes: map[string]interface{}{
+				"username": map[string]interface{}{
+					"firstName":  NewReqEvenAttrib("string", true, 4, 15),
+					"lastName":   NewReqEvenAttrib("string", true, 4, 255),
+					"middleName": NewReqEvenAttrib("string", true, 3, 255),
+				},
+			},
+		},
+		RequiredQueryParams: ReqEventSpec{},
+		RequiredPathParams:  ReqEventSpec{},
+	}
+	defer func() {
+		response = sh.HandleExceptions(
+			recover(),
+			returnHeaders,
+		).(events.APIGatewayProxyResponse)
+	}()
+
+	service := sh.NewService(requestSpec)
+	fmt.Println(service.PathParams)
+
+	varA := 0
+	varB := 1
+
+	// Intentional Error for testin
+	fmt.Println(varB / varA)
+	return response
+
+}
+
+func TestBadRequestException(t *testing.T) {
 	gotResponse := testBadRequest()
 	wantResponse := events.APIGatewayProxyResponse{
 		StatusCode:      400,
@@ -225,9 +274,26 @@ func TestHandleExceptions(t *testing.T) {
 		},
 	}
 
+	if gotResponse.StatusCode != wantResponse.StatusCode {
+		t.Errorf("Invalid response status code for bad request testing")
+	}
+}
+
+func TestInternalServerErrorException(t *testing.T) {
+	gotResponse := testInternalServerError()
+	wantResponse := events.APIGatewayProxyResponse{
+		StatusCode:      500,
+		IsBase64Encoded: false,
+		Body:            "Internal server error",
+		Headers: map[string]string{
+			"Content-Type": "application/json",
+		},
+	}
+
 	fmt.Println(gotResponse)
 
 	if gotResponse.StatusCode != wantResponse.StatusCode {
-		t.Errorf("Invalid response status code")
+		t.Errorf("Invalid repsonse status code for internalserver error testing")
 	}
+
 }

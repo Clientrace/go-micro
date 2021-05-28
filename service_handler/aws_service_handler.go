@@ -93,9 +93,5 @@ func (ah AWSServiceHandler) HandleExceptions(recoverPayload interface{}, returnH
 			ReturnHeaders: returnHeaders,
 		}).(events.APIGatewayProxyResponse)
 	}
-	return ah.NewHTTPResponse(ServiceResponse{
-		StatusCode:    INTERNAL_SERVER_ERROR,
-		ReturnBody:    "Internal Server Error",
-		ReturnHeaders: returnHeaders,
-	}).(events.APIGatewayProxyResponse)
+	return nil
 }
