@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -13,6 +14,14 @@ const (
 	WARN           = iota
 	FATAL          = iota
 )
+
+var logLevelMap = map[int]string{
+	int(INFO):  "INFO",
+	int(DEBUG): "DEBUG",
+	int(ERROR): "ERROR",
+	int(WARN):  "WARN",
+	int(FATAL): "FATAL",
+}
 
 /* Log Object */
 type Log struct {
@@ -37,13 +46,20 @@ type LogHistory struct {
 }
 
 type Logger struct {
-	LogHistory LogHistory
+	LogHistory *LogHistory
 }
 
-/* Insert Item into linked list */
-func (L *LogHistory) insert(logLvl LogLevel, txt string, modName string, data map[string]interface{}) {
+/* Create Logger Instance */
+func NewLogger() *Logger {
+	return &Logger{
+		LogHistory: &LogHistory{},
+	}
+}
+
+/* Insert new log in loghistory */
+func (lgr Logger) Log(logLvl LogLevel, txt string, modName string, data map[string]interface{}) {
 	list := &Node{
-		next: L.head,
+		next: lgr.LogHistory.head,
 		log: Log{
 			LogLevel:   logLvl,
 			TimeStamp:  time.Now().Format(time.RFC850),
@@ -52,27 +68,28 @@ func (L *LogHistory) insert(logLvl LogLevel, txt string, modName string, data ma
 			Data:       data,
 		},
 	}
-	if L.head != nil {
-		L.head.prev = list
+	if lgr.LogHistory.head != nil {
+		lgr.LogHistory.head.prev = list
 	}
-
-	L.head = list
-
-	l := L.head
+	lgr.LogHistory.head = list
+	l := lgr.LogHistory.head
 	for l.next != nil {
 		l = l.next
 	}
-	L.tail = l
+	lgr.LogHistory.tail = l
 }
 
-/* Create Logger Instance */
-func NewLogger() Logger {
-	lh := LogHistory{}
-	return Logger{
-		LogHistory: lh,
+func (lgr Logger) DisplayLogs() {
+	list := lgr.LogHistory.head
+	fmt.Println(lgr.LogHistory)
+	for list != nil {
+		fmt.Printf(
+			"%v [%v]<%v> %v\n",
+			list.log.TimeStamp,
+			logLevelMap[int(list.log.LogLevel)],
+			list.log.ModuleName,
+			list.log.Text,
+		)
+		list = list.next
 	}
-}
-
-func (lgr Logger) Log(logLvl LogLevel, txt string, modName string, data map[string]interface{}) {
-	lgr.LogHistory.insert(logLvl, txt, modName, data)
 }
