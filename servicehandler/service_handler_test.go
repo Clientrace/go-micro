@@ -1,4 +1,4 @@
-package service_handler
+package servicehandler
 
 import (
 	"reflect"
@@ -293,7 +293,7 @@ func TestNewEventAttrib(t *testing.T) {
 				tt.reqEventAttrib["MinLength"].(int),
 				tt.reqEventAttrib["MaxLength"].(int),
 			)
-			if reflect.TypeOf(reqAttribInstance).String() != "service_handler.ReqEventAttrib" {
+			if reflect.TypeOf(reqAttribInstance).String() != "servicehandler.ReqEventAttrib" {
 				t.Error("Invalid ReqEventAttrib")
 			}
 		})

@@ -1,4 +1,4 @@
-package service_handler
+package servicehandler
 
 import (
 	"encoding/json"
@@ -78,7 +78,7 @@ func (ah AWSServiceHandler) NewHTTPResponse(sr ServiceResponse) interface{} {
 
 func (ah AWSServiceHandler) HandleExceptions(recoverPayload interface{}, returnHeaders map[string]string) interface{} {
 	if recoverPayload != nil {
-		if reflect.TypeOf(recoverPayload).String() != "service_handler.HTTPException" {
+		if reflect.TypeOf(recoverPayload).String() != "servicehandler.HTTPException" {
 			return ah.NewHTTPResponse(ServiceResponse{
 				StatusCode:    INTERNAL_SERVER_ERROR,
 				ReturnBody:    "Internal Server Error",

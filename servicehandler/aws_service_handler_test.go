@@ -1,4 +1,4 @@
-package service_handler
+package servicehandler
 
 import (
 	"fmt"
@@ -127,11 +127,11 @@ func TestNewService(t *testing.T) {
 					t.Error("Invalid request not caught")
 				}
 			}()
-			var service_handler ServiceHandler = AWSServiceHandler{
+			var serviceHandler ServiceHandler = AWSServiceHandler{
 				Event: tt.awsEvent,
 			}
-			serviceEvent := service_handler.NewService(serviceSpec)
-			if reflect.TypeOf(serviceEvent).String() != "service_handler.ServiceEvent" {
+			serviceEvent := serviceHandler.NewService(serviceSpec)
+			if reflect.TypeOf(serviceEvent).String() != "servicehandler.ServiceEvent" {
 				t.Error("Invalid ReqEventAttrib")
 			}
 		})
@@ -140,7 +140,7 @@ func TestNewService(t *testing.T) {
 }
 
 func TestAWSNewResponse(t *testing.T) {
-	var service_handler = AWSServiceHandler{
+	var serviceHandler = AWSServiceHandler{
 		Event: events.APIGatewayProxyRequest{},
 	}
 
@@ -155,7 +155,7 @@ func TestAWSNewResponse(t *testing.T) {
 		},
 	}
 
-	got := service_handler.NewHTTPResponse(ServiceResponse{
+	got := serviceHandler.NewHTTPResponse(ServiceResponse{
 		StatusCode: 200,
 		ReturnBody: `{
 			"message" : "OK"

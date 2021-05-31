@@ -1,4 +1,4 @@
-package service_handler
+package servicehandler
 
 import (
 	"fmt"
