@@ -12,7 +12,7 @@ import (
 	AWS Implementation of Service Handler
 */
 type AWSServiceHandler struct {
-	event events.APIGatewayProxyRequest
+	Event events.APIGatewayProxyRequest
 }
 
 /*
@@ -20,16 +20,16 @@ type AWSServiceHandler struct {
 	and returns ServiceEvent object.
 */
 func (ah AWSServiceHandler) NewService(ss ServiceSpec) ServiceEvent {
-	requestEndpoint := ah.event.RequestContext.ResourcePath
+	requestEndpoint := ah.Event.RequestContext.ResourcePath
 
-	identity := ah.event.RequestContext.Identity
+	identity := ah.Event.RequestContext.Identity
 
 	var requestBody map[string]interface{}
-	queryParamsMapBuffer := ah.event.QueryStringParameters
-	pathParamsMapBuffer := ah.event.PathParameters
+	queryParamsMapBuffer := ah.Event.QueryStringParameters
+	pathParamsMapBuffer := ah.Event.PathParameters
 
 	// Convert JSON String body to map
-	json.Unmarshal([]byte(ah.event.Body), &requestBody)
+	json.Unmarshal([]byte(ah.Event.Body), &requestBody)
 
 	parseCode, errMsg := recursiveAttributeCheck(requestEndpoint, ss.RequiredRequestBody, requestBody, 0)
 	if parseCode != ATTRIBUTE_OK {

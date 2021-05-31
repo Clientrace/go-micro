@@ -128,7 +128,7 @@ func TestNewService(t *testing.T) {
 				}
 			}()
 			var service_handler ServiceHandler = AWSServiceHandler{
-				event: tt.awsEvent,
+				Event: tt.awsEvent,
 			}
 			serviceEvent := service_handler.NewService(serviceSpec)
 			if reflect.TypeOf(serviceEvent).String() != "service_handler.ServiceEvent" {
@@ -141,7 +141,7 @@ func TestNewService(t *testing.T) {
 
 func TestAWSNewResponse(t *testing.T) {
 	var service_handler = AWSServiceHandler{
-		event: events.APIGatewayProxyRequest{},
+		Event: events.APIGatewayProxyRequest{},
 	}
 
 	want := events.APIGatewayProxyResponse{
@@ -180,7 +180,7 @@ func testBadRequest() (response events.APIGatewayProxyResponse) {
 		"Content-Type": "application/json",
 	}
 	sh := AWSServiceHandler{
-		event: newAWSMockEvent(
+		Event: newAWSMockEvent(
 			map[string]string{},
 			map[string]string{},
 			`{}`,
@@ -219,7 +219,7 @@ func testInternalServerError() (response events.APIGatewayProxyResponse) {
 		"Content-Type": "application/json",
 	}
 	sh := AWSServiceHandler{
-		event: newAWSMockEvent(
+		Event: newAWSMockEvent(
 			map[string]string{},
 			map[string]string{},
 			`{
