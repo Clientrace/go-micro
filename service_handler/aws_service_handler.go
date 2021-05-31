@@ -2,7 +2,6 @@ package service_handler
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"reflect"
 
@@ -78,7 +77,6 @@ func (ah AWSServiceHandler) NewHTTPResponse(sr ServiceResponse) interface{} {
 }
 
 func (ah AWSServiceHandler) HandleExceptions(recoverPayload interface{}, returnHeaders map[string]string) interface{} {
-	fmt.Println("RECOVERING..")
 	if recoverPayload != nil {
 		if reflect.TypeOf(recoverPayload).String() != "service_handler.HTTPException" {
 			return ah.NewHTTPResponse(ServiceResponse{

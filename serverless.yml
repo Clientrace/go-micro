@@ -23,7 +23,7 @@ frameworkVersion: '>=1.28.0 <2.0.0'
 
 provider:
   name: aws
-  runtime: go1.x
+  runtime: go1.24
   stage: ${opt:stage, 'dev'}
   region: ap-southeast-1
   environment:
