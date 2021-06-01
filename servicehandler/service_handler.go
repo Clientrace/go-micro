@@ -24,10 +24,10 @@ const (
 
 /* Required Event Specification Attribute */
 type ReqEventAttrib struct {
-	DataType   string
-	IsRequired bool
-	MinLength  int
-	MaxLength  int
+	DataType   string `json:"dataType"`
+	IsRequired bool   `json:"isRequired"`
+	MinLength  int    `json:"minLength"`
+	MaxLength  int    `json:"maxLength"`
 }
 
 /* Service Event specification */
@@ -50,6 +50,7 @@ type ServiceEvent struct {
 	PathParams  map[string]interface{}
 }
 
+/* Service Logic Response */
 type ServiceResponse struct {
 	StatusCode    int
 	ReturnBody    string

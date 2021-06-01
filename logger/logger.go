@@ -2,6 +2,7 @@ package logger
 
 import (
 	"fmt"
+	"reflect"
 	"time"
 )
 
@@ -50,14 +51,38 @@ type Logger struct {
 }
 
 /* Create Logger Instance */
-func NewLogger() *Logger {
-	return &Logger{
+func NewLogger() Logger {
+	return Logger{
 		LogHistory: &LogHistory{},
 	}
 }
 
+// structToMap - Convert struct to map[string]interface{}
+func structToMap(in interface{}, tag string) (map[string]interface{}, error) {
+	ret := make(map[string]interface{})
+	mapVal := reflect.ValueOf(in)
+	if mapVal.Kind() != reflect.Struct {
+		return nil, fmt.Errorf("invalid input struct")
+	}
+	if mapVal.Kind() == reflect.Ptr {
+		mapVal = mapVal.Elem()
+	}
+
+	for i := 0; i < mapVal.Type().NumField(); i++ {
+		field := mapVal.Type().Field(i)
+		if tagVal := field.Tag.Get(tag); tagVal != "" {
+			ret[tagVal] = mapVal.Field(i).Interface()
+		}
+	}
+	return ret, nil
+}
+
 /* Insert new log in loghistory */
-func (lgr Logger) Log(logLvl LogLevel, txt string, modName string, data map[string]interface{}) {
+func (lgr Logger) Log(logLvl LogLevel, txt string, modName string, data interface{}, dataTag string) {
+	dataMap, err := structToMap(data, "json")
+	if err != nil {
+		panic("Invalid Log Data. Data should be of type Struct")
+	}
 	list := &Node{
 		next: lgr.LogHistory.head,
 		log: Log{
@@ -65,7 +90,7 @@ func (lgr Logger) Log(logLvl LogLevel, txt string, modName string, data map[stri
 			TimeStamp:  time.Now().Format(time.RFC850),
 			ModuleName: modName,
 			Text:       txt,
-			Data:       data,
+			Data:       dataMap,
 		},
 	}
 	if lgr.LogHistory.head != nil {
@@ -81,7 +106,6 @@ func (lgr Logger) Log(logLvl LogLevel, txt string, modName string, data map[stri
 
 func (lgr Logger) DisplayLogs() {
 	list := lgr.LogHistory.head
-	fmt.Println(lgr.LogHistory)
 	for list != nil {
 		fmt.Printf(
 			"%v [%v]<%v> %v\n",

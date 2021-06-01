@@ -4,8 +4,8 @@ type StatusCode int
 
 const (
 	BAD_REQUEST           StatusCode = 400
-	RESOURCE_CONFLICT                = 409
-	INTERNAL_SERVER_ERROR            = 500
+	RESOURCE_CONFLICT     StatusCode = 409
+	INTERNAL_SERVER_ERROR StatusCode = 500
 )
 
 type HTTPException struct {

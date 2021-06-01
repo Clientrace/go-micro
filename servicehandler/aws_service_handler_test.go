@@ -2,6 +2,7 @@ package servicehandler
 
 import (
 	"fmt"
+	"go-micro/logger"
 	"reflect"
 	"testing"
 
@@ -140,8 +141,10 @@ func TestNewService(t *testing.T) {
 }
 
 func TestAWSNewResponse(t *testing.T) {
+	logger := logger.NewLogger()
 	var serviceHandler = AWSServiceHandler{
-		Event: events.APIGatewayProxyRequest{},
+		Event:  events.APIGatewayProxyRequest{},
+		Logger: logger,
 	}
 
 	want := events.APIGatewayProxyResponse{
@@ -173,18 +176,22 @@ func TestAWSNewResponse(t *testing.T) {
 		t.Errorf("Invalid AWS Service Response Body")
 	}
 
+	logger.DisplayLogs()
+
 }
 
 func testBadRequest() (response events.APIGatewayProxyResponse) {
 	returnHeaders := map[string]string{
 		"Content-Type": "application/json",
 	}
+	logger := logger.NewLogger()
 	sh := AWSServiceHandler{
 		Event: newAWSMockEvent(
 			map[string]string{},
 			map[string]string{},
 			`{}`,
 		),
+		Logger: logger,
 	}
 	requestSpec := ServiceSpec{
 		RequiredRequestBody: ReqEventSpec{
@@ -218,6 +225,7 @@ func testInternalServerError() (response events.APIGatewayProxyResponse) {
 	returnHeaders := map[string]string{
 		"Content-Type": "application/json",
 	}
+	logger := logger.NewLogger()
 	sh := AWSServiceHandler{
 		Event: newAWSMockEvent(
 			map[string]string{},
@@ -230,6 +238,7 @@ func testInternalServerError() (response events.APIGatewayProxyResponse) {
 				}
 			}`,
 		),
+		Logger: logger,
 	}
 	requestSpec := ServiceSpec{
 		RequiredRequestBody: ReqEventSpec{
