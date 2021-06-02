@@ -6,8 +6,8 @@ import (
 
 func TestLogging(t *testing.T) {
 	logger := NewLogger()
-	logger.Log(INFO, "Test log", "TestLogging", nil)
-	logger.Log(INFO, "Test log", "TestLogging", nil)
+	logger.LogTxt(INFO, "Test log", "TestLogging")
+	logger.LogTxt(INFO, "Test log", "TestLogging")
 	logger.DisplayLogs()
 
 	// lh := LogHistory{}

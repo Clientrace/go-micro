@@ -32,9 +32,9 @@ type ReqEventAttrib struct {
 
 /* Service Event specification */
 type ServiceSpec struct {
-	RequiredRequestBody ReqEventSpec
-	RequiredQueryParams ReqEventSpec
-	RequiredPathParams  ReqEventSpec
+	RequiredRequestBody ReqEventSpec `json:"requiredRequestBody"`
+	RequiredQueryParams ReqEventSpec `json:"requiredQueryParams"`
+	RequiredPathParams  ReqEventSpec `json:"requiredPathParams"`
 }
 
 /* Required Event specification */

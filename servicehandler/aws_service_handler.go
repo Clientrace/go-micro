@@ -3,21 +3,20 @@ package servicehandler
 import (
 	"encoding/json"
 	"go-micro/logger"
-	"log"
 	"reflect"
 
 	"github.com/aws/aws-lambda-go/events"
 )
 
-// AWSServiceHandler - AWS Implement of Service Handler
+// AWSServiceHandler is the aws implementation of ServiceHandler
 type AWSServiceHandler struct {
 	Event  events.APIGatewayProxyRequest
 	Logger logger.Logger
 }
 
-// AWSServiceHandler.NewService - Creates new AWSServiceHandler instance
+// NewService will crete new AWSServiceHandler instance
 func (ah AWSServiceHandler) NewService(ss ServiceSpec) ServiceEvent {
-	ah.Logger.Log(logger.INFO, "Creating new service", "aws_service_handler", map[string]interface{}{})
+	ah.Logger.LogTxt(logger.INFO, "Creating new service", "aws_service_handler")
 
 	requestEndpoint := ah.Event.RequestContext.ResourcePath
 
@@ -30,22 +29,22 @@ func (ah AWSServiceHandler) NewService(ss ServiceSpec) ServiceEvent {
 	// Convert JSON String body to map
 	json.Unmarshal([]byte(ah.Event.Body), &requestBody)
 
-	ah.Logger.Log(logger.INFO, "Parsing Request Body", "aws_service_handler", requestBody)
+	ah.Logger.LogObj(logger.INFO, "Parsing Request Body", "aws_service_handler", requestBody, "", false)
 	parseCode, errMsg := recursiveAttributeCheck(requestEndpoint, ss.RequiredRequestBody, requestBody, 0)
 	if parseCode != ATTRIBUTE_OK {
-		ah.Logger.Log(logger.ERROR, "Invalid Request Body, "+errMsg, "aws_service_handler", nil)
+		ah.Logger.LogTxt(logger.ERROR, "Invalid Request Body, "+errMsg, "aws_service_handler")
 		causePanic(REQ_BODY, parseCode, errMsg)
 	}
 
 	// Covert queryParamsBuffer of map[string]string type to map[string]interface{}
-	ah.Logger.Log(logger.INFO, "Parsing Query Params", "aws_service_handler", requestBody)
 	queryParams := make(map[string]interface{}, len(queryParamsMapBuffer))
 	for k, v := range queryParamsMapBuffer {
 		queryParams[k] = v
 	}
+	ah.Logger.LogObj(logger.INFO, "Parsing Query Params", "aws_service_handler", queryParams, "", false)
 	parseCode, errMsg = recursiveAttributeCheck(requestEndpoint, ss.RequiredQueryParams, queryParams, 0)
 	if parseCode != ATTRIBUTE_OK {
-		log.Println("Invalid Query Params", errMsg)
+		ah.Logger.LogTxt(logger.ERROR, "Invalid Query Params, "+errMsg, "aws_service_handler")
 		causePanic(QUERY_PARAMS, parseCode, errMsg)
 	}
 
@@ -54,9 +53,10 @@ func (ah AWSServiceHandler) NewService(ss ServiceSpec) ServiceEvent {
 	for k, v := range pathParamsMapBuffer {
 		pathParams[k] = v
 	}
+	ah.Logger.LogObj(logger.INFO, "Parsing Path Params", "aws_service_handler", pathParams, "", false)
 	parseCode, errMsg = recursiveAttributeCheck(requestEndpoint, ss.RequiredPathParams, pathParams, 0)
 	if parseCode != ATTRIBUTE_OK {
-		log.Println("Invalid Path Params", errMsg)
+		ah.Logger.LogTxt(logger.ERROR, "Invalid Path params, "+errMsg, "aws_service_handler")
 		causePanic(PATH_PARAMS, parseCode, errMsg)
 	}
 
@@ -69,7 +69,7 @@ func (ah AWSServiceHandler) NewService(ss ServiceSpec) ServiceEvent {
 }
 
 func (ah AWSServiceHandler) NewHTTPResponse(sr ServiceResponse) interface{} {
-	ah.Logger.Log(logger.INFO, "Creating New HTTP Response", "aws_service_handler", nil)
+	ah.Logger.LogTxt(logger.INFO, "Create New HTTP Response", "aws_service_handler")
 	return events.APIGatewayProxyResponse{
 		StatusCode:      sr.StatusCode,
 		IsBase64Encoded: false,
@@ -83,13 +83,13 @@ func (ah AWSServiceHandler) HandleExceptions(recoverPayload interface{}, returnH
 		if reflect.TypeOf(recoverPayload).String() != "servicehandler.HTTPException" {
 			switch reflect.TypeOf(recoverPayload).String() {
 			case "string":
-				ah.Logger.Log(logger.FATAL, "Internal Server Error. "+recoverPayload.(string), "aws_service_handler", nil)
+				ah.Logger.LogTxt(logger.FATAL, "Internal Server Error. "+recoverPayload.(string), "aws_service_handler")
 			case "runtime.errorString":
 				errorString := recoverPayload.(error).Error()
-				ah.Logger.Log(logger.FATAL, "Internal Server Error. "+errorString, "aws_service_handler", nil)
+				ah.Logger.LogTxt(logger.FATAL, "Internal Server Error. "+errorString, "aws_service_handler")
 			case "error":
 				errorString := recoverPayload.(error).Error()
-				ah.Logger.Log(logger.FATAL, "Internal Server Error. "+errorString, "aws_service_handler", nil)
+				ah.Logger.LogTxt(logger.FATAL, "Internal Server Error. "+errorString, "aws_service_handler")
 			}
 			return ah.NewHTTPResponse(ServiceResponse{
 				StatusCode:    int(INTERNAL_SERVER_ERROR),
@@ -97,7 +97,7 @@ func (ah AWSServiceHandler) HandleExceptions(recoverPayload interface{}, returnH
 				ReturnHeaders: returnHeaders,
 			}).(events.APIGatewayProxyResponse)
 		}
-		ah.Logger.Log(logger.FATAL, recoverPayload.(HTTPException).ErrorMessage, "aws_service_handler", nil)
+		ah.Logger.LogTxt(logger.ERROR, recoverPayload.(HTTPException).ErrorMessage, "aws_service_handler")
 		return ah.NewHTTPResponse(ServiceResponse{
 			StatusCode:    recoverPayload.(HTTPException).StatusCode,
 			ReturnBody:    recoverPayload.(HTTPException).ErrorMessage,
