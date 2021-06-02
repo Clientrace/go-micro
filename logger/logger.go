@@ -79,10 +79,26 @@ func structToMap(in interface{}, tag string) (map[string]interface{}, error) {
 	return ret, nil
 }
 
-// Log will insert new log (data) into log history in a linked-list fashion.
+// insertNode will insert a node into the log history linked list
+func insertNode(node *Node, lh *LogHistory) {
+	head := lh.head
+	list := node
+	if head != nil {
+		lh.head.prev = list
+	}
+	lh.head = list
+	l := lh.head
+	for l.next != nil {
+		l = l.next
+	}
+	lh.tail = l
+}
+
+// LogObj will insert new log with additional app data (data interface{}) into log history in a linked-list fashion.
 // It will panic if given a isStruct = true value and the data value fed isn't a struct.
 // The data parameter expects a map[string]interface{} unless stated via isStruct.
-func (lgr Logger) Log(logLvl LogLevel, txt string, modName string, data interface{}, dataTag string, isStruct bool) {
+// It will transform the struct to map and collate all the fields with the dataTag provided.
+func (lgr Logger) LogObj(logLvl LogLevel, txt string, moduleName string, data interface{}, dataTag string, isStruct bool) {
 	var dataMap map[string]interface{}
 	if isStruct {
 		var err interface{}
@@ -93,25 +109,32 @@ func (lgr Logger) Log(logLvl LogLevel, txt string, modName string, data interfac
 	} else {
 		dataMap = data.(map[string]interface{})
 	}
-	list := &Node{
+	node := &Node{
 		next: lgr.LogHistory.head,
 		log: Log{
 			LogLevel:   logLvl,
 			TimeStamp:  time.Now().Format(time.RFC850),
-			ModuleName: modName,
+			ModuleName: moduleName,
 			Text:       txt,
 			Data:       dataMap,
 		},
 	}
-	if lgr.LogHistory.head != nil {
-		lgr.LogHistory.head.prev = list
+	insertNode(node, lgr.LogHistory)
+}
+
+// LogTxt will insert a new log text into log hisotry in a linked-list fashion.
+func (lgr Logger) LogTxt(logLvl LogLevel, txt string, moduleName string) {
+	node := &Node{
+		next: lgr.LogHistory.head,
+		log: Log{
+			LogLevel:   logLvl,
+			TimeStamp:  time.Now().Format(time.RFC850),
+			ModuleName: moduleName,
+			Text:       txt,
+			Data:       nil,
+		},
 	}
-	lgr.LogHistory.head = list
-	l := lgr.LogHistory.head
-	for l.next != nil {
-		l = l.next
-	}
-	lgr.LogHistory.tail = l
+	insertNode(node, lgr.LogHistory)
 }
 
 // DisplayLogs will display all saved logs using fmt.Printf
