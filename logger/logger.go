@@ -16,6 +16,7 @@ const (
 	FATAL          = iota
 )
 
+// LogLevelMap is a maaping for LogLevel enum
 var logLevelMap = map[int]string{
 	int(INFO):  "INFO",
 	int(DEBUG): "DEBUG",
@@ -24,7 +25,7 @@ var logLevelMap = map[int]string{
 	int(FATAL): "FATAL",
 }
 
-/* Log Object */
+// Log is the type of object that can be logged in the LogHistory.
 type Log struct {
 	LogLevel   LogLevel
 	ModuleName string
@@ -33,31 +34,32 @@ type Log struct {
 	Data       map[string]interface{}
 }
 
-/* Linked List Node */
+// Node is a node for implementing linkedlist in LogHistory.
 type Node struct {
 	prev *Node
 	next *Node
 	log  Log
 }
 
-/* Linked List */
+// LogHistory is the object for recording all logs in linkedlist fashion.
 type LogHistory struct {
 	head *Node
 	tail *Node
 }
 
+// Logger is an struct for logging.
 type Logger struct {
 	LogHistory *LogHistory
 }
 
-/* Create Logger Instance */
+// NewLogger will create new Logger instance.
 func NewLogger() Logger {
 	return Logger{
 		LogHistory: &LogHistory{},
 	}
 }
 
-// structToMap - Convert struct to map[string]interface{}
+// structToMap converts struct to map[string]interface{}.
 func structToMap(in interface{}, tag string) (map[string]interface{}, error) {
 	ret := make(map[string]interface{})
 	mapVal := reflect.ValueOf(in)
@@ -77,11 +79,19 @@ func structToMap(in interface{}, tag string) (map[string]interface{}, error) {
 	return ret, nil
 }
 
-/* Insert new log in loghistory */
-func (lgr Logger) Log(logLvl LogLevel, txt string, modName string, data interface{}, dataTag string) {
-	dataMap, err := structToMap(data, "json")
-	if err != nil {
-		panic("Invalid Log Data. Data should be of type Struct")
+// Log will insert new log (data) into log history in a linked-list fashion.
+// It will panic if given a isStruct = true value and the data value fed isn't a struct.
+// The data parameter expects a map[string]interface{} unless stated via isStruct.
+func (lgr Logger) Log(logLvl LogLevel, txt string, modName string, data interface{}, dataTag string, isStruct bool) {
+	var dataMap map[string]interface{}
+	if isStruct {
+		var err interface{}
+		dataMap, err = structToMap(data, "json")
+		if err != nil {
+			panic("Invalid Log Data. Data should be of type Struct")
+		}
+	} else {
+		dataMap = data.(map[string]interface{})
 	}
 	list := &Node{
 		next: lgr.LogHistory.head,
@@ -104,6 +114,7 @@ func (lgr Logger) Log(logLvl LogLevel, txt string, modName string, data interfac
 	lgr.LogHistory.tail = l
 }
 
+// DisplayLogs will display all saved logs using fmt.Printf
 func (lgr Logger) DisplayLogs() {
 	list := lgr.LogHistory.head
 	for list != nil {
