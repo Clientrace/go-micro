@@ -1,5 +1,7 @@
 package servicehandler
 
+import "fmt"
+
 type StatusCode int
 
 const (
@@ -28,6 +30,6 @@ func RaiseHTTPException(sc StatusCode, errMsg string) {
 	}
 	panic(HTTPException{
 		StatusCode:   int(sc),
-		ErrorMessage: errMsg,
+		ErrorMessage: fmt.Sprintf("{\"message\": \"%v\"}", errMsg),
 	})
 }

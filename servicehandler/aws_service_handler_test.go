@@ -150,9 +150,7 @@ func TestAWSNewResponse(t *testing.T) {
 	want := events.APIGatewayProxyResponse{
 		StatusCode:      200,
 		IsBase64Encoded: false,
-		Body: `{
-			"message" : "OK"
-		}`,
+		Body:            `{"message" : "OK"}`,
 		Headers: map[string]string{
 			"Content-Type": "application/json",
 		},
@@ -160,9 +158,7 @@ func TestAWSNewResponse(t *testing.T) {
 
 	got := serviceHandler.NewHTTPResponse(ServiceResponse{
 		StatusCode: 200,
-		ReturnBody: `{
-			"message" : "OK"
-		}`,
+		ReturnBody: `{"message" : "OK"}`,
 		ReturnHeaders: map[string]string{
 			"Content-Type": "application/json",
 		},
@@ -176,7 +172,7 @@ func TestAWSNewResponse(t *testing.T) {
 		t.Errorf("Invalid AWS Service Response Body")
 	}
 
-	logger.DisplayLogs()
+	logger.DisplayLogsBackward()
 
 }
 
@@ -189,7 +185,7 @@ func testBadRequest() (response events.APIGatewayProxyResponse) {
 		Event: newAWSMockEvent(
 			map[string]string{},
 			map[string]string{},
-			`{}`,
+			`{"testParam": "testParamValue"}`,
 		),
 		Logger: logger,
 	}
@@ -211,6 +207,7 @@ func testBadRequest() (response events.APIGatewayProxyResponse) {
 			recover(),
 			returnHeaders,
 		).(events.APIGatewayProxyResponse)
+		logger.DisplayLogsBackward()
 	}()
 
 	service := sh.NewService(requestSpec)
@@ -258,6 +255,7 @@ func testInternalServerError() (response events.APIGatewayProxyResponse) {
 			recover(),
 			returnHeaders,
 		).(events.APIGatewayProxyResponse)
+		logger.DisplayLogsBackward()
 	}()
 
 	service := sh.NewService(requestSpec)

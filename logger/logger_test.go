@@ -8,7 +8,7 @@ func TestLogging(t *testing.T) {
 	logger := NewLogger()
 	logger.LogTxt(INFO, "Test log", "TestLogging")
 	logger.LogTxt(INFO, "Test log", "TestLogging")
-	logger.DisplayLogs()
+	logger.DisplayLogsBackward()
 
 	// lh := LogHistory{}
 	// lh.insert(INFO, "TEST", "service", nil)

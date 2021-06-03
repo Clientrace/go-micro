@@ -18,11 +18,11 @@ const (
 
 // LogLevelMap is a maaping for LogLevel enum
 var logLevelMap = map[int]string{
-	int(INFO):  "INFO",
-	int(DEBUG): "DEBUG",
-	int(ERROR): "ERROR",
-	int(WARN):  "WARN",
-	int(FATAL): "FATAL",
+	int(INFO):  "[INFO] ",
+	int(DEBUG): "[DEBUG]",
+	int(ERROR): "[ERROR]",
+	int(WARN):  "[WARN] ",
+	int(FATAL): "[FATAL]",
 }
 
 // Log is the type of object that can be logged in the LogHistory.
@@ -138,16 +138,49 @@ func (lgr Logger) LogTxt(logLvl LogLevel, txt string, moduleName string) {
 }
 
 // DisplayLogs will display all saved logs using fmt.Printf
-func (lgr Logger) DisplayLogs() {
+func (lgr Logger) DisplayLogsForward() {
 	list := lgr.LogHistory.head
 	for list != nil {
+		appdata := ""
+		if list.log.Data != nil {
+			appdata = "{"
+			for k, v := range list.log.Data {
+				appdata += fmt.Sprintf("\t%v: %v\n", k, v)
+			}
+			appdata += "}"
+		}
 		fmt.Printf(
-			"%v [%v]<%v> %v\n",
+			"%v %v<%v> %v %v\n",
 			list.log.TimeStamp,
 			logLevelMap[int(list.log.LogLevel)],
 			list.log.ModuleName,
 			list.log.Text,
+			appdata,
 		)
 		list = list.next
+	}
+}
+
+// DisplayLogsBackward  will display all saved logs using fmt.Printf in historical order
+func (lgr Logger) DisplayLogsBackward() {
+	list := lgr.LogHistory.tail
+	for list != nil {
+		appdata := ""
+		if list.log.Data != nil {
+			appdata = "{"
+			for k, v := range list.log.Data {
+				appdata += fmt.Sprintf("\t%v: %v\n", k, v)
+			}
+			appdata += "}"
+		}
+		fmt.Printf(
+			"%v %v<%v> %v %v\n",
+			list.log.TimeStamp,
+			logLevelMap[int(list.log.LogLevel)],
+			list.log.ModuleName,
+			list.log.Text,
+			appdata,
+		)
+		list = list.prev
 	}
 }
