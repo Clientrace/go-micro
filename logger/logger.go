@@ -3,6 +3,8 @@ package logger
 import (
 	"fmt"
 	"reflect"
+	"runtime"
+	"strings"
 	"time"
 )
 
@@ -98,7 +100,10 @@ func insertNode(node *Node, lh *LogHistory) {
 // It will panic if given a isStruct = true value and the data value fed isn't a struct.
 // The data parameter expects a map[string]interface{} unless stated via isStruct.
 // It will transform the struct to map and collate all the fields with the dataTag provided.
-func (lgr Logger) LogObj(logLvl LogLevel, txt string, moduleName string, data interface{}, dataTag string, isStruct bool) {
+func (lgr Logger) LogObj(logLvl LogLevel, txt string, data interface{}, dataTag string, isStruct bool) {
+	pc, _, _, _ := runtime.Caller(1)
+	callerName := runtime.FuncForPC(pc).Name()
+	callerNameSegment := strings.Split(callerName, "/")
 	var dataMap map[string]interface{}
 	if isStruct {
 		var err interface{}
@@ -114,7 +119,7 @@ func (lgr Logger) LogObj(logLvl LogLevel, txt string, moduleName string, data in
 		log: Log{
 			LogLevel:   logLvl,
 			TimeStamp:  time.Now().Format(time.RFC850),
-			ModuleName: moduleName,
+			ModuleName: callerNameSegment[len(callerNameSegment)-1],
 			Text:       txt,
 			Data:       dataMap,
 		},
@@ -123,13 +128,16 @@ func (lgr Logger) LogObj(logLvl LogLevel, txt string, moduleName string, data in
 }
 
 // LogTxt will insert a new log text into log hisotry in a linked-list fashion.
-func (lgr Logger) LogTxt(logLvl LogLevel, txt string, moduleName string) {
+func (lgr Logger) LogTxt(logLvl LogLevel, txt string) {
+	pc, _, _, _ := runtime.Caller(1)
+	callerName := runtime.FuncForPC(pc).Name()
+	callerNameSegment := strings.Split(callerName, "/")
 	node := &Node{
 		next: lgr.LogHistory.head,
 		log: Log{
 			LogLevel:   logLvl,
 			TimeStamp:  time.Now().Format(time.RFC850),
-			ModuleName: moduleName,
+			ModuleName: callerNameSegment[len(callerNameSegment)-1],
 			Text:       txt,
 			Data:       nil,
 		},

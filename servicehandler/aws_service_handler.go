@@ -17,7 +17,7 @@ type AWSServiceHandler struct {
 
 // NewService will crete new AWSServiceHandler instance
 func (ah AWSServiceHandler) NewService(ss ServiceSpec) ServiceEvent {
-	ah.Logger.LogTxt(logger.INFO, "Creating new service", "aws_service_handler.NewService")
+	ah.Logger.LogTxt(logger.INFO, "Creating new service")
 
 	requestEndpoint := ah.Event.RequestContext.ResourcePath
 
@@ -30,10 +30,10 @@ func (ah AWSServiceHandler) NewService(ss ServiceSpec) ServiceEvent {
 	// Convert JSON String body to map
 	json.Unmarshal([]byte(ah.Event.Body), &requestBody)
 
-	ah.Logger.LogObj(logger.INFO, "Parsing Request Body", "aws_service_handler.NewService", requestBody, "", false)
+	ah.Logger.LogObj(logger.INFO, "Parsing Request Body", requestBody, "", false)
 	parseCode, errMsg := recursiveAttributeCheck(requestEndpoint, ss.RequiredRequestBody, requestBody, 0)
 	if parseCode != ATTRIBUTE_OK {
-		ah.Logger.LogTxt(logger.ERROR, "Invalid Request Body, "+errMsg, "aws_service_handler.NewService")
+		ah.Logger.LogTxt(logger.ERROR, "Invalid Request Body, "+errMsg)
 		causePanic(REQ_BODY, parseCode, errMsg)
 	}
 
@@ -42,10 +42,10 @@ func (ah AWSServiceHandler) NewService(ss ServiceSpec) ServiceEvent {
 	for k, v := range queryParamsMapBuffer {
 		queryParams[k] = v
 	}
-	ah.Logger.LogObj(logger.INFO, "Parsing Query Params", "aws_service_handler.NewService", queryParams, "", false)
+	ah.Logger.LogObj(logger.INFO, "Parsing Query Params", queryParams, "", false)
 	parseCode, errMsg = recursiveAttributeCheck(requestEndpoint, ss.RequiredQueryParams, queryParams, 0)
 	if parseCode != ATTRIBUTE_OK {
-		ah.Logger.LogTxt(logger.ERROR, "Invalid Query Params, "+errMsg, "aws_service_handler.NewService")
+		ah.Logger.LogTxt(logger.ERROR, "Invalid Query Params, "+errMsg)
 		causePanic(QUERY_PARAMS, parseCode, errMsg)
 	}
 
@@ -54,10 +54,10 @@ func (ah AWSServiceHandler) NewService(ss ServiceSpec) ServiceEvent {
 	for k, v := range pathParamsMapBuffer {
 		pathParams[k] = v
 	}
-	ah.Logger.LogObj(logger.INFO, "Parsing Path Params", "aws_service_handler.NewService", pathParams, "", false)
+	ah.Logger.LogObj(logger.INFO, "Parsing Path Params", pathParams, "", false)
 	parseCode, errMsg = recursiveAttributeCheck(requestEndpoint, ss.RequiredPathParams, pathParams, 0)
 	if parseCode != ATTRIBUTE_OK {
-		ah.Logger.LogTxt(logger.ERROR, "Invalid Path params, "+errMsg, "aws_service_handler.NewService")
+		ah.Logger.LogTxt(logger.ERROR, "Invalid Path params, "+errMsg)
 		causePanic(PATH_PARAMS, parseCode, errMsg)
 	}
 
@@ -73,7 +73,6 @@ func (ah AWSServiceHandler) NewHTTPResponse(sr ServiceResponse) interface{} {
 	ah.Logger.LogTxt(
 		logger.INFO,
 		"Creating new HTTP Response. Status Code <"+strconv.Itoa(sr.StatusCode)+">. Return Body:\n "+sr.ReturnBody,
-		"aws_service_handler.NewHTTPResponse",
 	)
 	return events.APIGatewayProxyResponse{
 		StatusCode:      sr.StatusCode,
@@ -91,21 +90,18 @@ func (ah AWSServiceHandler) HandleExceptions(recoverPayload interface{}, returnH
 				ah.Logger.LogTxt(
 					logger.FATAL,
 					"Internal Server Error. "+recoverPayload.(string),
-					"aws_service_handler.HandleExceptions",
 				)
 			case "runtime.errorString":
 				errorString := recoverPayload.(error).Error()
 				ah.Logger.LogTxt(
 					logger.FATAL,
 					"Internal Server Error. "+errorString,
-					"aws_service_handler.HandleExceptions",
 				)
 			case "error":
 				errorString := recoverPayload.(error).Error()
 				ah.Logger.LogTxt(
 					logger.FATAL,
 					"Internal Server Error. "+errorString,
-					"aws_service_handler.HandleExceptions",
 				)
 			}
 			return ah.NewHTTPResponse(ServiceResponse{
@@ -117,7 +113,6 @@ func (ah AWSServiceHandler) HandleExceptions(recoverPayload interface{}, returnH
 		ah.Logger.LogTxt(
 			logger.ERROR,
 			recoverPayload.(HTTPException).ErrorMessage,
-			"aws_service_handler.HandleException",
 		)
 		return ah.NewHTTPResponse(ServiceResponse{
 			StatusCode:    recoverPayload.(HTTPException).StatusCode,
