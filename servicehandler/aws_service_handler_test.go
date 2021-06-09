@@ -9,6 +9,36 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 )
 
+var returnHeaders = map[string]string{
+	"Content-Type": "application/json",
+}
+var handleExceptionTests = []struct {
+	testName string
+	input    interface{}
+	want     events.APIGatewayProxyResponse
+}{
+	{
+		"internal server error test (string)",
+		"error test",
+		events.APIGatewayProxyResponse{
+			StatusCode:      500,
+			IsBase64Encoded: false,
+			Body:            "Internal Server Error",
+		},
+	},
+	{
+		"internal server error test (string)",
+		map[string]string{
+			"testError": "testError",
+		},
+		events.APIGatewayProxyResponse{
+			StatusCode:      500,
+			IsBase64Encoded: false,
+			Body:            "Internal Server Error",
+		},
+	},
+}
+
 var newServiceTests = []struct {
 	testName string
 	awsEvent events.APIGatewayProxyRequest
@@ -101,8 +131,8 @@ func newAWSMockEvent(qParam map[string]string, pParam map[string]string,
 	}
 }
 
-func TestNewService(t *testing.T) {
-	serviceSpec := ServiceSpec{
+func TestNewServiceEvent(t *testing.T) {
+	eventSpec := EventSpec{
 		RequiredRequestBody: ReqEventSpec{
 			ReqEventAttributes: map[string]interface{}{
 				"firstname":  NewReqEvenAttrib("string", true, 2, 50),
@@ -121,6 +151,7 @@ func TestNewService(t *testing.T) {
 		},
 	}
 
+	logger := logger.NewLogger()
 	for _, tt := range newServiceTests {
 		t.Run(tt.testName, func(t *testing.T) {
 			defer func() {
@@ -129,9 +160,10 @@ func TestNewService(t *testing.T) {
 				}
 			}()
 			var serviceHandler ServiceHandler = AWSServiceHandler{
-				Event: tt.awsEvent,
+				Event:  tt.awsEvent,
+				Logger: logger,
 			}
-			serviceEvent := serviceHandler.NewService(serviceSpec)
+			serviceEvent := serviceHandler.NewServiceEvent(eventSpec)
 			if reflect.TypeOf(serviceEvent).String() != "servicehandler.ServiceEvent" {
 				t.Error("Invalid ReqEventAttrib")
 			}
@@ -142,6 +174,8 @@ func TestNewService(t *testing.T) {
 
 func TestAWSNewResponse(t *testing.T) {
 	logger := logger.NewLogger()
+	returnBody := "{\"Body\": \"OK\"}"
+
 	var serviceHandler = AWSServiceHandler{
 		Event:  events.APIGatewayProxyRequest{},
 		Logger: logger,
@@ -150,18 +184,14 @@ func TestAWSNewResponse(t *testing.T) {
 	want := events.APIGatewayProxyResponse{
 		StatusCode:      200,
 		IsBase64Encoded: false,
-		Body:            `{"message" : "OK"}`,
-		Headers: map[string]string{
-			"Content-Type": "application/json",
-		},
+		Body:            returnBody,
+		Headers:         returnHeaders,
 	}
 
 	got := serviceHandler.NewHTTPResponse(ServiceResponse{
-		StatusCode: 200,
-		ReturnBody: `{"message" : "OK"}`,
-		ReturnHeaders: map[string]string{
-			"Content-Type": "application/json",
-		},
+		StatusCode:    200,
+		ReturnBody:    returnBody,
+		ReturnHeaders: returnHeaders,
 	})
 
 	if want.StatusCode != got.(events.APIGatewayProxyResponse).StatusCode {
@@ -176,20 +206,67 @@ func TestAWSNewResponse(t *testing.T) {
 
 }
 
-func testBadRequest() (response events.APIGatewayProxyResponse) {
-	returnHeaders := map[string]string{
-		"Content-Type": "application/json",
-	}
+func testValidRequest() (response events.APIGatewayProxyResponse) {
 	logger := logger.NewLogger()
 	sh := AWSServiceHandler{
 		Event: newAWSMockEvent(
 			map[string]string{},
 			map[string]string{},
-			`{"testParam": "testParamValue"}`,
+			`{
+				"username" : {
+					"firstName" : "juan",
+					"lastName" : "delacruz",
+					"middleName" : "ponce"
+				}
+			}`,
 		),
 		Logger: logger,
 	}
-	requestSpec := ServiceSpec{
+	requestSpec := EventSpec{
+		RequiredRequestBody: ReqEventSpec{
+			ReqEventAttributes: map[string]interface{}{
+				"username": map[string]interface{}{
+					"firstName":  NewReqEvenAttrib("string", true, 4, 15),
+					"lastName":   NewReqEvenAttrib("string", true, 4, 255),
+					"middleName": NewReqEvenAttrib("string", true, 4, 255),
+				},
+			},
+		},
+		RequiredQueryParams: ReqEventSpec{},
+		RequiredPathParams:  ReqEventSpec{},
+	}
+
+	defer func() {
+		if ex := sh.HandleExceptions(recover(), returnHeaders); ex != nil {
+			response = ex.(events.APIGatewayProxyResponse)
+		}
+		logger.DisplayLogsBackward()
+	}()
+
+	service := sh.NewServiceEvent(requestSpec)
+	fmt.Println(service.PathParams)
+	fmt.Println(service.QueryParams)
+	fmt.Println(service.RequestBody)
+
+	return events.APIGatewayProxyResponse{
+		StatusCode:      200,
+		IsBase64Encoded: false,
+		Body:            `{"message" : "OK"}`,
+		Headers:         returnHeaders,
+	}
+}
+
+func testBadRequest() (response events.APIGatewayProxyResponse) {
+	logger := logger.NewLogger()
+	sh := AWSServiceHandler{
+		Event: newAWSMockEvent(
+			map[string]string{},
+			map[string]string{},
+			`{}`,
+		),
+		Logger: logger,
+	}
+	requestSpec := EventSpec{
 		RequiredRequestBody: ReqEventSpec{
 			ReqEventAttributes: map[string]interface{}{
 				"username": map[string]interface{}{
@@ -203,14 +280,13 @@ func testBadRequest() (response events.APIGatewayProxyResponse) {
 		RequiredPathParams:  ReqEventSpec{},
 	}
 	defer func() {
-		response = sh.HandleExceptions(
-			recover(),
-			returnHeaders,
-		).(events.APIGatewayProxyResponse)
+		if ex := sh.HandleExceptions(recover(), returnHeaders); ex != nil {
+			response = ex.(events.APIGatewayProxyResponse)
+		}
 		logger.DisplayLogsBackward()
 	}()
 
-	service := sh.NewService(requestSpec)
+	service := sh.NewServiceEvent(requestSpec)
 	fmt.Println(service.PathParams)
 	fmt.Println(service.QueryParams)
 	fmt.Println(service.RequestBody)
@@ -219,9 +295,6 @@ func testBadRequest() (response events.APIGatewayProxyResponse) {
 }
 
 func testInternalServerError() (response events.APIGatewayProxyResponse) {
-	returnHeaders := map[string]string{
-		"Content-Type": "application/json",
-	}
 	logger := logger.NewLogger()
 	sh := AWSServiceHandler{
 		Event: newAWSMockEvent(
@@ -237,7 +310,7 @@ func testInternalServerError() (response events.APIGatewayProxyResponse) {
 		),
 		Logger: logger,
 	}
-	requestSpec := ServiceSpec{
+	requestSpec := EventSpec{
 		RequiredRequestBody: ReqEventSpec{
 			ReqEventAttributes: map[string]interface{}{
 				"username": map[string]interface{}{
@@ -251,14 +324,13 @@ func testInternalServerError() (response events.APIGatewayProxyResponse) {
 		RequiredPathParams:  ReqEventSpec{},
 	}
 	defer func() {
-		response = sh.HandleExceptions(
-			recover(),
-			returnHeaders,
-		).(events.APIGatewayProxyResponse)
+		if ex := sh.HandleExceptions(recover(), returnHeaders); ex != nil {
+			response = ex.(events.APIGatewayProxyResponse)
+		}
 		logger.DisplayLogsBackward()
 	}()
 
-	service := sh.NewService(requestSpec)
+	service := sh.NewServiceEvent(requestSpec)
 	fmt.Println(service.PathParams)
 
 	varA := 0
@@ -270,15 +342,26 @@ func testInternalServerError() (response events.APIGatewayProxyResponse) {
 
 }
 
+func TestValidRequest(t *testing.T) {
+	gotResponse := testValidRequest()
+	wantResponse := events.APIGatewayProxyResponse{
+		StatusCode:      200,
+		IsBase64Encoded: false,
+		Body:            "",
+		Headers:         returnHeaders,
+	}
+	if gotResponse.StatusCode != wantResponse.StatusCode {
+		t.Errorf("Invalid response status code for valid http request")
+	}
+}
+
 func TestBadRequestException(t *testing.T) {
 	gotResponse := testBadRequest()
 	wantResponse := events.APIGatewayProxyResponse{
 		StatusCode:      400,
 		IsBase64Encoded: false,
 		Body:            "Error in Request Body, MISSING ATTRIBUTE ERROR. missin attribute 'middleName'",
-		Headers: map[string]string{
-			"Content-Type": "application/json",
-		},
+		Headers:         returnHeaders,
 	}
 
 	if gotResponse.StatusCode != wantResponse.StatusCode {
@@ -292,15 +375,44 @@ func TestInternalServerErrorException(t *testing.T) {
 		StatusCode:      500,
 		IsBase64Encoded: false,
 		Body:            "Internal server error",
-		Headers: map[string]string{
-			"Content-Type": "application/json",
-		},
+		Headers:         returnHeaders,
 	}
 
 	fmt.Println(gotResponse)
 
 	if gotResponse.StatusCode != wantResponse.StatusCode {
 		t.Errorf("Invalid repsonse status code for internalserver error testing")
+	}
+
+}
+
+func TestAWSHTTPExceptions(t *testing.T) {
+	logger := logger.NewLogger()
+	sh := AWSServiceHandler{
+		Event: newAWSMockEvent(
+			map[string]string{},
+			map[string]string{},
+			`{
+				"username": {
+					"firstName": "clarence",
+					"lastName" : "penaflor",
+					"middleName": "par"
+				}
+			}`,
+		),
+		Logger: logger,
+	}
+
+	for _, tt := range handleExceptionTests {
+		t.Run(tt.testName, func(t *testing.T) {
+			defer func() {
+				got := sh.HandleExceptions(recover(), returnHeaders).(events.APIGatewayProxyResponse)
+				if tt.want.StatusCode != got.StatusCode {
+					t.Errorf("Invalid aws http exception. status code does not match")
+				}
+			}()
+			panic(tt.input)
+		})
 	}
 
 }

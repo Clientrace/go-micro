@@ -18,13 +18,13 @@ const (
 	FATAL          = iota
 )
 
-// LogLevelMap is a maaping for LogLevel enum
+// LogLevelMap is a mapping for LogLevel enum
 var logLevelMap = map[int]string{
-	int(INFO):  "[INFO] ",
-	int(DEBUG): "[DEBUG]",
-	int(ERROR): "[ERROR]",
-	int(WARN):  "[WARN] ",
-	int(FATAL): "[FATAL]",
+	int(INFO):  "INFO",
+	int(DEBUG): "DEBUG",
+	int(ERROR): "ERROR",
+	int(WARN):  "WARN",
+	int(FATAL): "FATAL",
 }
 
 // Log is the type of object that can be logged in the LogHistory.
@@ -36,7 +36,7 @@ type Log struct {
 	Data       map[string]interface{}
 }
 
-// Node is a node for implementing linkedlist in LogHistory.
+// Node is a node for implementing linked list in LogHistory.
 type Node struct {
 	prev *Node
 	next *Node
@@ -68,10 +68,6 @@ func structToMap(in interface{}, tag string) (map[string]interface{}, error) {
 	if mapVal.Kind() != reflect.Struct {
 		return nil, fmt.Errorf("invalid input struct")
 	}
-	if mapVal.Kind() == reflect.Ptr {
-		mapVal = mapVal.Elem()
-	}
-
 	for i := 0; i < mapVal.Type().NumField(); i++ {
 		field := mapVal.Type().Field(i)
 		if tagVal := field.Tag.Get(tag); tagVal != "" {
@@ -101,10 +97,10 @@ func insertNode(node *Node, lh *LogHistory) {
 // The data parameter expects a map[string]interface{} unless stated via isStruct.
 // It will transform the struct to map and collate all the fields with the dataTag provided.
 func (lgr Logger) LogObj(logLvl LogLevel, txt string, data interface{}, dataTag string, isStruct bool) {
+	var dataMap map[string]interface{}
 	pc, _, _, _ := runtime.Caller(1)
 	callerName := runtime.FuncForPC(pc).Name()
 	callerNameSegment := strings.Split(callerName, "/")
-	var dataMap map[string]interface{}
 	if isStruct {
 		var err interface{}
 		dataMap, err = structToMap(data, "json")

@@ -24,17 +24,17 @@ const (
 
 /* Required Event Specification Attribute */
 type ReqEventAttrib struct {
-	DataType   string `json:"dataType"`
-	IsRequired bool   `json:"isRequired"`
-	MinLength  int    `json:"minLength"`
-	MaxLength  int    `json:"maxLength"`
+	DataType   string
+	IsRequired bool
+	MinLength  int
+	MaxLength  int
 }
 
 /* Service Event specification */
-type ServiceSpec struct {
-	RequiredRequestBody ReqEventSpec `json:"requiredRequestBody"`
-	RequiredQueryParams ReqEventSpec `json:"requiredQueryParams"`
-	RequiredPathParams  ReqEventSpec `json:"requiredPathParams"`
+type EventSpec struct {
+	RequiredRequestBody ReqEventSpec
+	RequiredQueryParams ReqEventSpec
+	RequiredPathParams  ReqEventSpec
 }
 
 /* Required Event specification */
@@ -50,7 +50,6 @@ type ServiceEvent struct {
 	PathParams  map[string]interface{}
 }
 
-/* Service Logic Response */
 type ServiceResponse struct {
 	StatusCode    int
 	ReturnBody    string
@@ -58,7 +57,7 @@ type ServiceResponse struct {
 }
 
 type ServiceHandler interface {
-	NewService(ServiceSpec) ServiceEvent
+	NewServiceEvent(EventSpec) ServiceEvent
 	NewHTTPResponse(ServiceResponse) interface{}
 	HandleExceptions(interface{}, map[string]string) interface{}
 }
@@ -75,10 +74,7 @@ var errMsgMap = map[int]string{
 	INVALID_ATTRIBUTE_TYPE_ERROR:   "INVALID ATTRIBUTE TYPE",
 }
 
-/*
-	Cause a panic in service handler for the
-	http_exceptions to catch orrecover from.
-*/
+// causePanic will raise an http exception via that'll cause a panic and should be recovered
 func causePanic(paramType int, parseCode int, errorMsg string) {
 	RaiseHTTPException(
 		BAD_REQUEST,
@@ -86,9 +82,7 @@ func causePanic(paramType int, parseCode int, errorMsg string) {
 	)
 }
 
-/*
-	Create new Required Event Attributes
-*/
+// NewReqEventAttrib will create a new ReqEventAttrib object
 func NewReqEvenAttrib(dataType string, isRequired bool, minLength int, maxLength int) ReqEventAttrib {
 	validDataTypes := []string{"string", "number", "boolean"}
 	invalidDataType := true
@@ -110,117 +104,117 @@ func NewReqEvenAttrib(dataType string, isRequired bool, minLength int, maxLength
 
 }
 
-// Check request attributes deep. See if passed attribute match the specs
+// isInRange will check if in is between the given range
+func isInRange(in interface{}, min int, max int) bool {
+	vType := reflect.TypeOf(in).String()
+	switch vType {
+	case "string":
+		vLen := len(in.(string))
+		if !(vLen >= min && vLen <= max) {
+			return false
+		}
+	case "int":
+		vLen := in.(int)
+		if !(vLen >= min && vLen <= max) {
+			return false
+		}
+	case "float32":
+		vLen := in.(float32)
+		if !(vLen >= float32(min) && vLen <= float32(max)) {
+			return false
+		}
+	case "float64":
+		vLen := in.(float64)
+		if !(vLen >= float64(min) && vLen <= float64(max)) {
+			return false
+		}
+	}
+	return true
+}
+
+// attribCheck is a helper function of recursiveAttributeCheck that checks the attrib type
+// and required min/max length.
+func attribCheck(attribName string, rqa ReqEventAttrib, attribute interface{}) (int, string) {
+	reqType := rqa.DataType
+	raMaxLen := rqa.MaxLength
+	raMinLen := rqa.MinLength
+	gotType := reflect.TypeOf(attribute).String()
+	resCode := ATTRIBUTE_OK
+	retMsg := "OK"
+
+	invalidTypeMsg := fmt.Sprintf(
+		"invalid type of attribute %v. expected %v, got %v", attribName, reqType, gotType,
+	)
+	invalidLengthMsg := fmt.Sprintf(
+		"invalid length of attribute %v. min length: %d, max length: %d", attribName, raMinLen, raMaxLen,
+	)
+
+	typeValidatorMap := map[string]interface{}{
+		"string":  []string{"string"},
+		"number":  []string{"int", "float32", "float64"},
+		"boolean": []string{"bool"},
+	}
+
+	typeValidator := func(got string, want string) bool {
+		for _, v := range typeValidatorMap[want].([]string) {
+			if v == got {
+				return true
+			}
+		}
+		return false
+	}
+
+	if !typeValidator(gotType, reqType) {
+		resCode = INVALID_ATTRIBUTE_TYPE_ERROR
+		retMsg = invalidTypeMsg
+	} else if reqType == "string" || reqType == "number" {
+		if !isInRange(attribute, raMinLen, raMaxLen) {
+			resCode = INVALID_ATTRIBUTE_LENGTH_ERROR
+			retMsg = invalidLengthMsg
+		}
+	}
+	return resCode, retMsg
+}
+
+// recursiveAttributeCheck will check request attributes deep; see if passed attribute match the specs
 func recursiveAttributeCheck(endpoint string, reqEventSpec ReqEventSpec, attributes map[string]interface{}, depth int) (int, string) {
 	rqa := reqEventSpec.ReqEventAttributes
+	retCode := ATTRIBUTE_OK
+	retMsg := "OK"
+	mapType := "map[string]interface {}"
 
 	// Iterate through required attributes
 	for k := range rqa {
-		if _, ok := attributes[k]; ok {
-			if reflect.TypeOf(rqa[k]).Kind().String() == "map" {
-				if reflect.TypeOf(attributes[k]).String() == "map[string]interface {}" {
-					// Create ReqEventSpec for child attribute
-					reqEventChild := ReqEventSpec{
-						ReqEventAttributes: rqa[k].(map[string]interface{}),
-					}
-					ret, errMsg := recursiveAttributeCheck(endpoint, reqEventChild, attributes[k].(map[string]interface{}), depth+1)
-					if ret != ATTRIBUTE_OK {
-						return ret, errMsg
-					}
-				} else {
-					return INVALID_ATTRIBUTE_TYPE_ERROR, fmt.Sprintf(
-						"invalid type of attribute '%v'. expected object got %v",
-						k,
-						reflect.TypeOf(attributes[k]),
-					)
-				}
+		// Missing Attribute
+		rqaType := reflect.TypeOf(rqa[k]).String()
+		if _, ok := attributes[k]; !ok && (rqaType == mapType || (rqa[k].(ReqEventAttrib).IsRequired && rqaType != mapType)) {
+			retCode = MISSING_ATTRIBUTE_ERROR
+			retMsg = fmt.Sprintf("missing attribute '%v'", k)
+			return retCode, retMsg
+		}
 
-			} else {
-
-				// Required VS Found Attribute Type
-				reqAttributeType := rqa[k].(ReqEventAttrib).DataType
-				reqAttributeMaxLength := rqa[k].(ReqEventAttrib).MaxLength
-				reqAttributeMinLength := rqa[k].(ReqEventAttrib).MinLength
-				foundAttribType := reflect.TypeOf(attributes[k]).String()
-
-				if reqAttributeType == "string" && foundAttribType == "string" {
-					if !(len(attributes[k].(string)) >= reqAttributeMinLength && len(attributes[k].(string)) <=
-						reqAttributeMaxLength) {
-						return INVALID_ATTRIBUTE_LENGTH_ERROR, fmt.Sprintf(
-							"invalid length of attribute %v. min length: %d, max length: %d",
-							k,
-							reqAttributeMinLength,
-							reqAttributeMaxLength,
-						)
-					}
-				} else if reqAttributeType == "string" && foundAttribType != "string" {
-					return INVALID_ATTRIBUTE_TYPE_ERROR, fmt.Sprintf(
-						"invalid type of attribute %v. expected string, got %v",
-						k,
-						reflect.TypeOf(attributes[k]).String(),
-					)
-				}
-				if reqAttributeType == "number" && (foundAttribType == "int" || foundAttribType == "float32" ||
-					foundAttribType == "float64") {
-					if foundAttribType == "int" {
-						if !(attributes[k].(int) >= reqAttributeMinLength && attributes[k].(int) <=
-							reqAttributeMaxLength) {
-							return INVALID_ATTRIBUTE_LENGTH_ERROR, fmt.Sprintf(
-								"invalid length of attribute %v. min length: %d, max length: %d",
-								k,
-								reqAttributeMinLength,
-								reqAttributeMaxLength,
-							)
-						}
-					}
-					if foundAttribType == "float64" {
-						if !(attributes[k].(float64) >= float64(reqAttributeMinLength) && attributes[k].(float64) <=
-							float64(reqAttributeMaxLength)) {
-							return INVALID_ATTRIBUTE_LENGTH_ERROR, fmt.Sprintf(
-								"invalid length of attribute %v. min length: %d, max length: %d",
-								k,
-								reqAttributeMinLength,
-								reqAttributeMaxLength,
-							)
-						}
-					}
-					if foundAttribType == "float32" {
-						if !(attributes[k].(float32) >= float32(reqAttributeMinLength) && attributes[k].(float32) <=
-							float32(reqAttributeMaxLength)) {
-							return INVALID_ATTRIBUTE_LENGTH_ERROR, fmt.Sprintf(
-								"invalid length of attribute %v. min length: %d, max length: %d",
-								k,
-								reqAttributeMinLength,
-								reqAttributeMaxLength,
-							)
-						}
-					}
-				} else if reqAttributeType == "number" && !(foundAttribType == "int" || foundAttribType == "float32" ||
-					foundAttribType == "float64") {
-					return INVALID_ATTRIBUTE_TYPE_ERROR, fmt.Sprintf(
-						"invalid type of attribute %v. expected number(int or float) got %v",
-						k,
-						attributes[k],
-					)
-				}
-
-				if reqAttributeType == "boolean" && foundAttribType != "bool" {
-					return INVALID_ATTRIBUTE_TYPE_ERROR, fmt.Sprintf(
-						"invalid type of attribute %v. expected boolean",
-						k,
-					)
-				}
+		// Recurse through the parent attribute
+		if reflect.TypeOf(rqa[k]).Kind().String() == "map" && reflect.TypeOf(attributes[k]).String() == mapType {
+			retCode, retMsg = recursiveAttributeCheck(
+				endpoint,
+				ReqEventSpec{
+					ReqEventAttributes: rqa[k].(map[string]interface{}),
+				},
+				attributes[k].(map[string]interface{}),
+				depth+1,
+			)
+			if retCode != ATTRIBUTE_OK {
+				return retCode, retMsg
 			}
-		} else {
-			if reflect.TypeOf(rqa[k]).String() == "map[string]interface {}" {
-				return MISSING_ATTRIBUTE_ERROR, fmt.Sprintf("missing attribute '%v'", k)
-			} else {
-				if rqa[k].(ReqEventAttrib).IsRequired {
-					return MISSING_ATTRIBUTE_ERROR, fmt.Sprintf("missing attribute '%v'", k)
-				}
-			}
+		} else if reflect.TypeOf(rqa[k]).Kind().String() == "map" && reflect.TypeOf(attributes[k]).String() != mapType {
+			return INVALID_ATTRIBUTE_TYPE_ERROR, fmt.Sprintf(
+				"invalid type of attribute '%v'. expected object got %v",
+				k,
+				reflect.TypeOf(attributes[k]),
+			)
+		} else if retCode, retMsg := attribCheck(k, rqa[k].(ReqEventAttrib), attributes[k]); retCode != ATTRIBUTE_OK {
+			return retCode, retMsg
 		}
 	}
-
-	return ATTRIBUTE_OK, "OK"
+	return retCode, retMsg
 }

@@ -16,7 +16,7 @@ type AWSServiceHandler struct {
 }
 
 // NewService will crete new AWSServiceHandler instance
-func (ah AWSServiceHandler) NewService(ss ServiceSpec) ServiceEvent {
+func (ah AWSServiceHandler) NewServiceEvent(es EventSpec) ServiceEvent {
 	ah.Logger.LogTxt(logger.INFO, "Creating new service")
 
 	requestEndpoint := ah.Event.RequestContext.ResourcePath
@@ -31,7 +31,7 @@ func (ah AWSServiceHandler) NewService(ss ServiceSpec) ServiceEvent {
 	json.Unmarshal([]byte(ah.Event.Body), &requestBody)
 
 	ah.Logger.LogObj(logger.INFO, "Parsing Request Body", requestBody, "", false)
-	parseCode, errMsg := recursiveAttributeCheck(requestEndpoint, ss.RequiredRequestBody, requestBody, 0)
+	parseCode, errMsg := recursiveAttributeCheck(requestEndpoint, es.RequiredRequestBody, requestBody, 0)
 	if parseCode != ATTRIBUTE_OK {
 		ah.Logger.LogTxt(logger.ERROR, "Invalid Request Body, "+errMsg)
 		causePanic(REQ_BODY, parseCode, errMsg)
@@ -43,7 +43,7 @@ func (ah AWSServiceHandler) NewService(ss ServiceSpec) ServiceEvent {
 		queryParams[k] = v
 	}
 	ah.Logger.LogObj(logger.INFO, "Parsing Query Params", queryParams, "", false)
-	parseCode, errMsg = recursiveAttributeCheck(requestEndpoint, ss.RequiredQueryParams, queryParams, 0)
+	parseCode, errMsg = recursiveAttributeCheck(requestEndpoint, es.RequiredQueryParams, queryParams, 0)
 	if parseCode != ATTRIBUTE_OK {
 		ah.Logger.LogTxt(logger.ERROR, "Invalid Query Params, "+errMsg)
 		causePanic(QUERY_PARAMS, parseCode, errMsg)
@@ -55,7 +55,7 @@ func (ah AWSServiceHandler) NewService(ss ServiceSpec) ServiceEvent {
 		pathParams[k] = v
 	}
 	ah.Logger.LogObj(logger.INFO, "Parsing Path Params", pathParams, "", false)
-	parseCode, errMsg = recursiveAttributeCheck(requestEndpoint, ss.RequiredPathParams, pathParams, 0)
+	parseCode, errMsg = recursiveAttributeCheck(requestEndpoint, es.RequiredPathParams, pathParams, 0)
 	if parseCode != ATTRIBUTE_OK {
 		ah.Logger.LogTxt(logger.ERROR, "Invalid Path params, "+errMsg)
 		causePanic(PATH_PARAMS, parseCode, errMsg)
@@ -92,12 +92,6 @@ func (ah AWSServiceHandler) HandleExceptions(recoverPayload interface{}, returnH
 					"Internal Server Error. "+recoverPayload.(string),
 				)
 			case "runtime.errorString":
-				errorString := recoverPayload.(error).Error()
-				ah.Logger.LogTxt(
-					logger.FATAL,
-					"Internal Server Error. "+errorString,
-				)
-			case "error":
 				errorString := recoverPayload.(error).Error()
 				ah.Logger.LogTxt(
 					logger.FATAL,
