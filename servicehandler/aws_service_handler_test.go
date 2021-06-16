@@ -27,7 +27,7 @@ var handleExceptionTests = []struct {
 		},
 	},
 	{
-		"internal server error test (string)",
+		"internal server error test (struct)",
 		map[string]string{
 			"testError": "testError",
 		},

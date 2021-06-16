@@ -72,7 +72,7 @@ func (ah AWSServiceHandler) NewServiceEvent(es EventSpec) ServiceEvent {
 func (ah AWSServiceHandler) NewHTTPResponse(sr ServiceResponse) interface{} {
 	ah.Logger.LogTxt(
 		logger.INFO,
-		"Creating new HTTP Response. Status Code <"+strconv.Itoa(sr.StatusCode)+">. Return Body:\n "+sr.ReturnBody,
+		"Creating new HTTP Response. Status Code <"+strconv.Itoa(sr.StatusCode)+">. Return Body: "+sr.ReturnBody,
 	)
 	return events.APIGatewayProxyResponse{
 		StatusCode:      sr.StatusCode,
@@ -84,6 +84,7 @@ func (ah AWSServiceHandler) NewHTTPResponse(sr ServiceResponse) interface{} {
 
 func (ah AWSServiceHandler) HandleExceptions(recoverPayload interface{}, returnHeaders map[string]string) interface{} {
 	if recoverPayload != nil {
+		returnHeaders["Content-Type"] = "text/plain"
 		if reflect.TypeOf(recoverPayload).String() != "servicehandler.HTTPException" {
 			switch reflect.TypeOf(recoverPayload).String() {
 			case "string":
@@ -97,6 +98,9 @@ func (ah AWSServiceHandler) HandleExceptions(recoverPayload interface{}, returnH
 					logger.FATAL,
 					"Internal Server Error. "+errorString,
 				)
+			case "map[string]string":
+				jsonstr, _ := json.Marshal(recoverPayload)
+				ah.Logger.LogTxt(logger.FATAL, string(jsonstr))
 			}
 			return ah.NewHTTPResponse(ServiceResponse{
 				StatusCode:    int(INTERNAL_SERVER_ERROR),

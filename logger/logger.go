@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"runtime"
@@ -169,22 +170,18 @@ func (lgr Logger) DisplayLogsForward() {
 func (lgr Logger) DisplayLogsBackward() {
 	list := lgr.LogHistory.tail
 	for list != nil {
-		appdata := ""
-		if list.log.Data != nil {
-			appdata = "{"
-			for k, v := range list.log.Data {
-				appdata += fmt.Sprintf("\t%v: %v\n", k, v)
-			}
-			appdata += "}"
-		}
-		fmt.Printf(
-			"%v %v<%v> %v %v\n",
+		appdata, _ := json.Marshal(list.log.Data)
+		logEntryText := fmt.Sprintf(
+			"%v %v<%v> %v ",
 			list.log.TimeStamp,
 			logLevelMap[int(list.log.LogLevel)],
 			list.log.ModuleName,
 			list.log.Text,
-			appdata,
 		)
+		if string(appdata) != "null" {
+			logEntryText += string(appdata)
+		}
+		fmt.Println(logEntryText)
 		list = list.prev
 	}
 }
