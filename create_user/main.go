@@ -23,6 +23,8 @@ type EventSpec interface {
 func Handler(ctx context.Context, event events.APIGatewayProxyRequest) (Response, error) {
 	var buf bytes.Buffer
 
+	log.Println("CTX:")
+	log.Println(ctx)
 	log.Println(event)
 
 	body, err := json.Marshal(map[string]interface{}{
