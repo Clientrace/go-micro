@@ -22,7 +22,7 @@ import (
 
 ```
 ### **Service Function**
-Creating the service implementation function. This is where the business logic is implemented. The function exepects a context, service event, and a loggger as its arguments. The servicehandler.ServiceEvent contains the properties extracted from the client side's API request (se.PathParams, se.QueryParams, se.RequestBody, se.Identity).
+Creating the service implementation function. This is where the business logic is implemented. The function expects a context, service event, and a loggger as its arguments. The servicehandler.ServiceEvent contains the properties extracted from the client side's API request (se.PathParams, se.QueryParams, se.RequestBody, se.Identity).
 ```
 // createUserHandler is service implementation of create user
 func createUserHandler(ctx context.Context, se servicehandler.ServiceEvent, lgr logger.Logger) string {
