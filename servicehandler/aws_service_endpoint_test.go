@@ -2,6 +2,7 @@ package servicehandler
 
 import (
 	"context"
+	"fmt"
 	"go-micro/logger"
 	"testing"
 
@@ -33,7 +34,9 @@ var serviceEndpointTests = []struct {
 	{
 		"test service endpoint valid request",
 		EventSpec{},
-		func(se ServiceEvent, logger logger.Logger) string { return "{\"message\": \"OK\"}" },
+		func(ctx context.Context, se ServiceEvent, logger logger.Logger) string {
+			return "{\"message\": \"OK\"}"
+		},
 		events.APIGatewayProxyRequest{},
 		map[string]string{
 			TEST_EXTRA_HEADER_KEY: TEST_EXTRA_HEADER_VALUE,
@@ -53,7 +56,7 @@ var serviceEndpointTests = []struct {
 				},
 			},
 		},
-		func(se ServiceEvent, logger logger.Logger) string { return "" },
+		func(ctx context.Context, se ServiceEvent, logger logger.Logger) string { return "" },
 		events.APIGatewayProxyRequest{},
 		map[string]string{
 			TEST_EXTRA_HEADER_KEY: TEST_EXTRA_HEADER_VALUE,
@@ -72,7 +75,7 @@ func TestServiceValidRequest(t *testing.T) {
 			// mock aws lambda start for testing expected values
 			awsLambdaStart = func(handler interface{}) {
 				var ctx context.Context
-				response := handler.(func(context.Context, events.APIGatewayProxyRequest) events.APIGatewayProxyResponse)(
+				response, _ := handler.(func(context.Context, events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error))(
 					ctx,
 					tt.requestEvent,
 				)
@@ -88,8 +91,14 @@ func TestServiceValidRequest(t *testing.T) {
 			}
 
 			lgr := logger.NewLogger()
-			testServiceEndpoint := NewServiceEndpoint(tt.eventSpec, tt.function, lgr, tt.headers)
+			testServiceEndpoint := NewServiceEndpoint(tt.eventSpec, tt.function, lgr, tt.headers, nil)
 			testServiceEndpoint.Execute()
+
+			// test try run if it runs without error
+			fmt.Println("TEST DRYRUN")
+			var ctx context.Context
+			resp := testServiceEndpoint.Dryrun(ctx, events.APIGatewayProxyRequest{})
+			fmt.Println(resp)
 		})
 	}
 }

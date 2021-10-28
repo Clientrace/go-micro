@@ -16,7 +16,7 @@ type AWSServiceHandler struct {
 }
 
 // NewService will crete new AWSServiceHandler instance
-func (ah AWSServiceHandler) NewServiceEvent(es EventSpec) ServiceEvent {
+func (ah AWSServiceHandler) NewServiceEvent(es EventSpec, options interface{}) ServiceEvent {
 	ah.Logger.LogTxt(logger.INFO, "Creating new service")
 
 	requestEndpoint := ah.Event.RequestContext.ResourcePath
@@ -66,6 +66,7 @@ func (ah AWSServiceHandler) NewServiceEvent(es EventSpec) ServiceEvent {
 		RequestBody: requestBody,
 		QueryParams: queryParams,
 		Identity:    identity,
+		Options:     options,
 	}
 }
 

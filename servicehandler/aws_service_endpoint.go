@@ -13,7 +13,7 @@ type AWSServiceEndpoint struct {
 }
 
 // ServiceFunction is the function type of microservice funtion implementation
-type ServiceFunction func(se ServiceEvent, logger logger.Logger) string
+type ServiceFunction func(ctx context.Context, se ServiceEvent, logger logger.Logger) string
 
 // awsLambdaStart is the trigger for lambda execution that can me mocked in testing
 var awsLambdaStart = func(handler interface{}) {
@@ -22,12 +22,13 @@ var awsLambdaStart = func(handler interface{}) {
 
 // NewServiceEndpoint will create the aws service enpoint instance
 func NewServiceEndpoint(es EventSpec, sf ServiceFunction, lgr logger.Logger,
-	retHeaders map[string]string) *AWSServiceEndpoint {
+	retHeaders map[string]string, options interface{}) *AWSServiceEndpoint {
 	defaultRetHeaders := map[string]string{
 		"Content-Type": "application/json",
 	}
 
-	genericServiceEnpoint := func(ctx context.Context, event events.APIGatewayProxyRequest) (response events.APIGatewayProxyResponse) {
+	genericServiceEnpoint := func(ctx context.Context,
+		event events.APIGatewayProxyRequest) (response events.APIGatewayProxyResponse, reqError error) {
 		// Append Return Headers
 		for k, v := range retHeaders {
 			defaultRetHeaders[k] = v
@@ -52,11 +53,11 @@ func NewServiceEndpoint(es EventSpec, sf ServiceFunction, lgr logger.Logger,
 			lgr.DisplayLogsBackward()
 		}()
 
-		se := svh.NewServiceEvent(es)
+		se := svh.NewServiceEvent(es, options)
 
 		// Execute the service function
 		lgr.LogTxt(logger.INFO, "Executing Service Function..")
-		responseBody := sf(se, lgr)
+		responseBody := sf(ctx, se, lgr)
 
 		// Generate New HTTP Response
 		lgr.LogTxt(logger.INFO, "Building Response..")
@@ -66,7 +67,7 @@ func NewServiceEndpoint(es EventSpec, sf ServiceFunction, lgr logger.Logger,
 			ReturnHeaders: defaultRetHeaders,
 		}).(events.APIGatewayProxyResponse)
 
-		return response
+		return response, nil
 	}
 
 	return &AWSServiceEndpoint{
@@ -78,4 +79,12 @@ func NewServiceEndpoint(es EventSpec, sf ServiceFunction, lgr logger.Logger,
 // Execute will trigger the execution of aws lambda
 func (ae AWSServiceEndpoint) Execute() {
 	awsLambdaStart(ae.handler)
+}
+
+// Dryrun will run the servicehandler without invoking the awslambda
+func (ae AWSServiceEndpoint) Dryrun(ctx context.Context,
+	event events.APIGatewayProxyRequest) (response events.APIGatewayProxyResponse) {
+	f := ae.handler.(func(context.Context, events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error))
+	out, _ := f(ctx, event)
+	return out
 }

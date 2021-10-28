@@ -48,6 +48,7 @@ type ServiceEvent struct {
 	RequestBody map[string]interface{}
 	QueryParams map[string]interface{}
 	PathParams  map[string]interface{}
+	Options     interface{}
 }
 
 type ServiceResponse struct {
@@ -57,7 +58,7 @@ type ServiceResponse struct {
 }
 
 type ServiceHandler interface {
-	NewServiceEvent(EventSpec) ServiceEvent
+	NewServiceEvent(EventSpec, interface{}) ServiceEvent
 	NewHTTPResponse(ServiceResponse) interface{}
 	HandleExceptions(interface{}, map[string]string) interface{}
 }

@@ -163,7 +163,7 @@ func TestNewServiceEvent(t *testing.T) {
 				Event:  tt.awsEvent,
 				Logger: logger,
 			}
-			serviceEvent := serviceHandler.NewServiceEvent(eventSpec)
+			serviceEvent := serviceHandler.NewServiceEvent(eventSpec, nil)
 			if reflect.TypeOf(serviceEvent).String() != "servicehandler.ServiceEvent" {
 				t.Error("Invalid ReqEventAttrib")
 			}
@@ -243,7 +243,7 @@ func testValidRequest() (response events.APIGatewayProxyResponse) {
 		logger.DisplayLogsBackward()
 	}()
 
-	service := sh.NewServiceEvent(requestSpec)
+	service := sh.NewServiceEvent(requestSpec, nil)
 	fmt.Println(service.PathParams)
 	fmt.Println(service.QueryParams)
 	fmt.Println(service.RequestBody)
@@ -286,7 +286,7 @@ func testBadRequest() (response events.APIGatewayProxyResponse) {
 		logger.DisplayLogsBackward()
 	}()
 
-	service := sh.NewServiceEvent(requestSpec)
+	service := sh.NewServiceEvent(requestSpec, nil)
 	fmt.Println(service.PathParams)
 	fmt.Println(service.QueryParams)
 	fmt.Println(service.RequestBody)
@@ -330,7 +330,7 @@ func testInternalServerError() (response events.APIGatewayProxyResponse) {
 		logger.DisplayLogsBackward()
 	}()
 
-	service := sh.NewServiceEvent(requestSpec)
+	service := sh.NewServiceEvent(requestSpec, nil)
 	fmt.Println(service.PathParams)
 
 	varA := 0
